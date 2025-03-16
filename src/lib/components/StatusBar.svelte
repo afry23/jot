@@ -2,6 +2,7 @@
   import { activeTab } from '$lib/stores/tabs';
   import { notes } from '$lib/stores/notes';
   import { theme, toggleTheme } from '$lib/stores/settings';
+  import { countWords, countCharacters, countLines } from '$lib/utils/textFormatting';
   
   // Tab colors for indicator
   let tabColors = [
@@ -16,58 +17,6 @@
   
   // Calculate text statistics
   $: currentContent = $notes[$activeTab] || '';
-  
-  // Count words properly using DOM parsing
-  function countWords(html: string): number {
-    // Create a temporary DOM element to parse the HTML
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = html;
-    
-    // Get the text content (without HTML tags)
-    const text = tempElement.textContent || '';
-    
-    // Count words by splitting on whitespace
-    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-  }
-  
-  // Count characters properly using DOM parsing
-  function countCharacters(html: string): number {
-    // Create a temporary DOM element to parse the HTML
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = html;
-    
-    // Get the text content (without HTML tags)
-    const text = tempElement.textContent || '';
-    
-    // Return the character count
-    return text.length;
-  }
-  
-  // Count lines by counting block elements
-  function countLines(html: string): number {
-    // Create a temporary DOM element to parse the HTML
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = html;
-    
-    // Count block elements that create new lines
-    const blockElements = tempElement.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre, br');
-    
-    // Count <br> tags separately
-    const brTags = tempElement.querySelectorAll('br');
-    
-    // Handle case where content exists but no block elements
-    if (blockElements.length === 0) {
-      // If there's content but no block elements, count as 1 line
-      return tempElement.textContent?.trim() ? 1 : 0;
-    }
-    
-    // Return the count of block elements plus <br> tags
-    // We subtract the br tags count once since they're already counted in blockElements
-    //return blockElements.length - brTags.length + (brTags.length > 0 ? brTags.length + 1 : 0);
-    return blockElements.length;
-  }
-  
-  // Compute the statistics
   $: wordCount = countWords(currentContent);
   $: characterCount = countCharacters(currentContent);
   $: lineCount = countLines(currentContent);
@@ -85,11 +34,8 @@
   </div>
   
   <div class="actions">
-    <button class="theme-toggle" on:click={toggleTheme}>
+    <button class="theme-toggle" on:click={toggleTheme} title="Toggle theme">
       {$theme === 'dark' ? '☀️' : '🌙'}
-    </button>
-    <button class="font-toggle">
-      A
     </button>
   </div>
 </footer>

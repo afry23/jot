@@ -56,7 +56,7 @@
 
   main {
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
     padding: 0;
     margin: 0;
   }
