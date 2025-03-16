@@ -5,11 +5,13 @@
   import StatusBar from '$lib/components/StatusBar.svelte';
   import { activeTab } from '$lib/stores/tabs';
   import { notes } from '$lib/stores/notes';
-  import { theme } from '$lib/stores/settings';
+  import { theme, loadSettings } from '$lib/stores/settings';
   import { loadNotes, saveNote } from '$lib/utils/persistence';
+  import '../app.css';
 
-  // Load notes on mount
+  // Load notes and settings on mount
   onMount(async () => {
+    await loadSettings();
     await loadNotes();
   });
 
