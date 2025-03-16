@@ -2,7 +2,8 @@
   import ColorDot from './ColorDot.svelte';
   import Settings from './Settings.svelte';
   import { activeTab, setActiveTab } from '$lib/stores/tabs';
-    import { invoke } from '@tauri-apps/api/core';
+  import { invoke } from '@tauri-apps/api/core';
+  import { onMount } from 'svelte';
 
   // Tab colors
   const tabColors = [
@@ -28,10 +29,17 @@
     await invoke('close_window');
   }
 
+  onMount(() => {
+    console.log("Header component mounted, Settings reference:", settingsComponent);
+  });
+
   // Open settings
   function openSettings() {
+    console.log("Settings button clicked, component reference:", settingsComponent);
     if (settingsComponent) {
       settingsComponent.open();
+    } else {
+      console.error("Settings component not initialized correctly");
     }
   }
 </script>
@@ -52,7 +60,7 @@
   </div>
   
   <div class="right">
-    <button class="settings-btn" on:click={openSettings}>⚙</button>
+    <button class="settings-btn" on:click|stopPropagation={openSettings}>⚙</button>
   </div>
 </header>
 
