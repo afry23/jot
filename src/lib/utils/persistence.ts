@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/tauri';
 import { setNotes } from '$lib/stores/notes';
+import { invoke } from '@tauri-apps/api/core';
 
 // Save a note to storage
 export async function saveNote(tabIndex: number, content: string) {

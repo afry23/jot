@@ -1,5 +1,4 @@
 import { writable } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/tauri';
 
 // Define theme type
 type Theme = 'light' | 'dark';
