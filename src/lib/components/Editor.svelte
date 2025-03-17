@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount } from 'svelte';
   import { activeTab } from '$lib/stores/tabs';
   import { notes, updateNote } from '$lib/stores/notes';
-  import { formatBold, formatItalic, formatList } from '$lib/utils/textFormatting';
 
-  let editorElement: HTMLDivElement;
+  let editorElement: HTMLTextAreaElement;
   let tabColors = [
     '#F6C046', // Yellow
     '#F0874F', // Orange 
@@ -15,42 +14,17 @@
     '#7E9D7E'  // Green
   ];
   
-  function handleInput(event) {
+  function handleInput() {
     if (editorElement) {
-      // Store the current selection position
-      const selection = window.getSelection();
-      const range = selection?.getRangeAt(0);
-      
-      // Get the content directly from the editor element
-      const content = editorElement.innerHTML;
-      
       // Update the store with the current content
-      updateNote($activeTab, content);
-      
-      // Prevent any default browser behavior that might affect cursor
-      event.stopPropagation();
+      updateNote($activeTab, editorElement.value);
     }
   }
   
-  // Key shortcuts for formatting
+  // Key shortcuts for tab navigation
   function handleKeydown(event: KeyboardEvent) {
-    // Ctrl+B: Bold
-    if (event.ctrlKey && event.key === 'b') {
-      event.preventDefault();
-      formatBold();
-    }
-    // Ctrl+I: Italic
-    else if (event.ctrlKey && event.key === 'i') {
-      event.preventDefault();
-      formatItalic();
-    }
-    // Ctrl+L: List
-    else if (event.ctrlKey && event.key === 'l') {
-      event.preventDefault();
-      formatList();
-    }
     // Ctrl+1-7: Change tab
-    else if (event.ctrlKey && event.key >= '1' && event.key <= '7') {
+    if (event.ctrlKey && event.key >= '1' && event.key <= '7') {
       event.preventDefault();
       const tabIndex = parseInt(event.key) - 1;
       if (tabIndex >= 0 && tabIndex < 7) {
@@ -66,39 +40,23 @@
     // Only update content if we've changed tabs
     if (previousTab !== $activeTab) {
       const content = $notes[$activeTab] || '';
-      editorElement.innerHTML = content;
+      editorElement.value = content;
       previousTab = $activeTab;
       
-      // Wait for DOM update, then focus at the end
+      // Focus and place cursor at the end
       setTimeout(() => {
-        // Place cursor at the end
         editorElement.focus();
-        
-        // Use Selection API to move cursor to end
-        const selection = window.getSelection();
-        if (selection) {
-          selection.removeAllRanges();
-          const range = document.createRange();
-          range.selectNodeContents(editorElement);
-          range.collapse(false); // collapse to end
-          selection.addRange(range);
-        }
+        editorElement.selectionStart = editorElement.value.length;
+        editorElement.selectionEnd = editorElement.value.length;
       }, 10);
     }
   }
   
-  // Remove reactive focus setter since we handle this in the tab change watcher now
-  
   onMount(() => {
     if (editorElement) {
-      // Set initial content - using insertAdjacentHTML instead of innerHTML
-      // to avoid potential DOM nesting issues
-      editorElement.innerHTML = '';
-      if ($notes[$activeTab]) {
-        editorElement.innerHTML = $notes[$activeTab];
-      }
-      
-      // Simple focus without cursor manipulation
+      // Set initial content
+      editorElement.value = $notes[$activeTab] || '';
+      // Focus the editor
       editorElement.focus();
     }
   });
@@ -108,54 +66,37 @@
   class="editor-container"
   style="--tab-color: {tabColors[$activeTab]};"
 >
-  <div
+  <textarea
     class="editor"
     bind:this={editorElement}
-    contenteditable="true"
     on:input={handleInput}
     on:keydown={handleKeydown}
-    on:blur={handleInput} 
-    on:focus={() => {}} 
+    on:blur={handleInput}
     spellcheck="true"
-  ></div>
+  ></textarea>
 </div>
 
 <style>
   .editor-container {
     height: 100%;
-    overflow-y: auto;
-    padding: 20px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
   }
 
   .editor {
-    min-height: 100%;
+    width: 100%;
+    height: 100%;
     outline: none;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 16px;
     line-height: 1.5;
     color: var(--text-color);
-    white-space: pre-wrap; /* Preserve whitespace but allow wrapping */
-    word-break: break-word; /* Prevent overflow by breaking words */
-    direction: ltr; /* Explicitly set text direction */
-    caret-color: var(--text-color); /* Explicit caret color */
-  }
-
-  .editor :global(h1), .editor :global(h2), .editor :global(h3) {
-    color: var(--tab-color);
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-  }
-
-  .editor :global(strong) {
-    font-weight: 600;
-  }
-
-  .editor :global(ul), .editor :global(ol) {
-    padding-left: 1.5em;
-    margin: 0.5em 0;
-  }
-
-  .editor :global(li) {
-    margin-bottom: 0.25em;
+    background-color: transparent;
+    border: none;
+    resize: none;
+    padding: 20px;
+    box-sizing: border-box;
+    caret-color: var(--tab-color);
   }
 </style>

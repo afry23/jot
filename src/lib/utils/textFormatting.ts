@@ -1,48 +1,80 @@
-// Basic rich text formatting functions
+// Text formatting utility functions
 
-// Format selected text as bold
-export function formatBold() {
-    document.execCommand('bold', false);
-  }
+// Count words in text
+export function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+}
+
+// Count characters in text
+export function countCharacters(text: string): number {
+  return text.length;
+}
+
+// Count lines in text
+export function countLines(text: string): number {
+  return text.split('\n').length;
+}
+
+// Format markdown text to HTML for preview
+export function formatMarkdown(text: string): string {
+  if (!text) return '';
   
-  // Format selected text as italic
-  export function formatItalic() {
-    document.execCommand('italic', false);
-  }
+  let formatted = text;
   
-  // Format selected text as a list
-  export function formatList() {
-    document.execCommand('insertUnorderedList', false);
-  }
+  // Simple sanitization (prevent script injection)
+  formatted = formatted.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   
-  // Format selected text as a heading
-  export function formatHeading(level: 1 | 2 | 3) {
-    document.execCommand('formatBlock', false, `h${level}`);
-  }
+  // Format headers (# Header)
+  formatted = formatted.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  formatted = formatted.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  formatted = formatted.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   
-  // Clear formatting from selected text
-  export function clearFormatting() {
-    document.execCommand('removeFormat', false);
-  }
+  // Format bold (**bold**)
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Get plain text from HTML content
-  export function getPlainText(html: string): string {
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = html;
-    return tempElement.textContent || '';
-  }
+  // Format italic (*italic*)
+  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
   
-  // Count words in text
-  export function countWords(text: string): number {
-    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-  }
+  // Format code blocks (```code```)
+  formatted = formatted.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
   
-  // Count characters in text
-  export function countCharacters(text: string): number {
-    return text.length;
-  }
+  // Format inline code (`code`)
+  formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
   
-  // Count lines in text
-  export function countLines(text: string): number {
-    return text.split('\n').length;
+  // Format blockquotes (> quote)
+  formatted = formatted.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  
+  // Format unordered lists (- item)
+  formatted = formatted.replace(/^- (.+)$/gm, '<ul><li>$1</li></ul>');
+  
+  // Fix nested lists (combine adjacent ul tags)
+  formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+  
+  // Format ordered lists (1. item)
+  formatted = formatted.replace(/^\d+\. (.+)$/gm, '<ol><li>$1</li></ol>');
+  
+  // Fix nested ordered lists
+  formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
+  
+  // Format horizontal rules (---)
+  formatted = formatted.replace(/^---+$/gm, '<hr>');
+  
+  // Format links ([text](url))
+  formatted = formatted.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+  
+  // Convert line breaks to <br> tags, avoiding adding them inside code blocks
+  formatted = formatted.replace(/(?!<pre>|<\/pre>|<code>|<\/code>)\n(?!<pre>|<\/pre>|<code>|<\/code>)/g, '<br>');
+  
+  // Wrap plain text in paragraphs (only text not already in HTML tags)
+  // This is a bit complex and may introduce nesting issues
+  /*
+  const paragraphs = formatted.split(/(?:<\/?[a-z]+(?:\s+[^>]*)?>)+/g);
+  for (let i = 0; i < paragraphs.length; i++) {
+    if (paragraphs[i].trim() && !paragraphs[i].match(/^<\//)) {
+      formatted = formatted.replace(paragraphs[i], `<p>${paragraphs[i]}</p>`);
+    }
   }
+  */
+  
+  return formatted;
+}

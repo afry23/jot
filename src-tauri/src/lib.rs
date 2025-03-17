@@ -28,7 +28,7 @@ fn get_notes_dir(app_handle: &AppHandle) -> PathBuf {
 // Get the path to a specific note file
 fn get_note_path(app_handle: &AppHandle, tab_index: usize) -> PathBuf {
     let mut path = get_notes_dir(app_handle);
-    path.push(format!("note_{}.html", tab_index));
+    path.push(format!("note_{}.txt", tab_index));  // Changed from .html to .txt
     path
 }
 

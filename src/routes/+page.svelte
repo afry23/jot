@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Header from '$lib/components/Header.svelte';
-  import Editor from '$lib/components/Editor.svelte';
+  import EditorContainer from '$lib/components/EditorContainer.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
   import { activeTab } from '$lib/stores/tabs';
   import { notes } from '$lib/stores/notes';
@@ -28,7 +28,7 @@
 <div class="app" class:dark={$theme === 'dark'} class:light={$theme === 'light'}>
   <Header />
   <main>
-    <Editor />
+    <EditorContainer />
   </main>
   <StatusBar />
 </div>
@@ -56,7 +56,7 @@
 
   main {
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
     padding: 0;
     margin: 0;
   }

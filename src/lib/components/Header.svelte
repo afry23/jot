@@ -45,10 +45,6 @@
 </script>
 
 <header>
-  <div class="left">
-    <button class="close-btn" on:click={closeWindow}>×</button>
-  </div>
-  
   <div class="tabs">
     {#each tabColors as color, i}
       <ColorDot 
