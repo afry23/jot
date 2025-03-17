@@ -2,6 +2,7 @@
   import { activeTab } from '$lib/stores/tabs';
   import { notes } from '$lib/stores/notes';
   import { theme, toggleTheme } from '$lib/stores/settings';
+  import { viewMode, toggleViewMode } from '$lib/stores/viewMode';
   import { countWords, countCharacters, countLines } from '$lib/utils/textFormatting';
   
   // Tab colors for indicator
@@ -34,6 +35,9 @@
   </div>
   
   <div class="actions">
+    <button class="view-toggle" on:click={toggleViewMode} title="Toggle view mode">
+      {$viewMode === 'edit' ? '👁️' : '✏️'}
+    </button>
     <button class="theme-toggle" on:click={toggleTheme} title="Toggle theme">
       {$theme === 'dark' ? '☀️' : '🌙'}
     </button>

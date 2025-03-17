@@ -6,9 +6,25 @@
   let fontSizes = ['Small', 'Medium', 'Large'];
   let selectedFontSize = 'Medium';
   
-  // Keyboard shortcuts info - simplified for plain text
+  // Keyboard shortcuts info
   const shortcuts = [
     { key: 'Ctrl+1-7', action: 'Switch to tab 1-7' }
+  ];
+  
+  // Markdown syntax help
+  const markdownHelp = [
+    { syntax: '# Heading', description: 'Level 1 heading' },
+    { syntax: '## Heading', description: 'Level 2 heading' },
+    { syntax: '### Heading', description: 'Level 3 heading' },
+    { syntax: '**bold text**', description: 'Bold text' },
+    { syntax: '*italic text*', description: 'Italic text' },
+    { syntax: '- item', description: 'List item' },
+    { syntax: '1. item', description: 'Numbered list item' },
+    { syntax: '> quote', description: 'Blockquote' },
+    { syntax: '`code`', description: 'Inline code' },
+    { syntax: '```code block```', description: 'Code block' },
+    { syntax: '[text](url)', description: 'Link' },
+    { syntax: '---', description: 'Horizontal rule' }
   ];
 
   export function open() {
@@ -83,6 +99,18 @@
         </div>
       </div>
       
+      <div class="settings-section">
+        <h3>Markdown Formatting</h3>
+        <div class="markdown-help">
+          {#each markdownHelp as help}
+            <div class="markdown-item">
+              <code>{help.syntax}</code>
+              <span>{help.description}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+      
       <div class="footer">
         <span>Jot v1.0.0</span>
         <button class="close-btn" on:click={close}>Close</button>
@@ -107,8 +135,10 @@
   }
   
   .settings-panel {
-    width: 400px;
+    width: 450px;
     max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
     background-color: var(--bg-color);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -188,6 +218,31 @@
     border-radius: 3px;
     font-family: monospace;
     font-size: 14px;
+  }
+  
+  .markdown-help {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 200px;
+  }
+  
+  .markdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+  
+  code {
+    font-family: monospace;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 13px;
   }
   
   .footer {
