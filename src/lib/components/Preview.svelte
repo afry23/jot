@@ -13,6 +13,17 @@
       '#7E9D7E'  // Green
     ];
   
+  // Key shortcuts for tab navigation
+    function handleKeydown(event: KeyboardEvent) {
+      // Ctrl+1-7: Change tab
+      if (event.ctrlKey && event.key >= '1' && event.key <= '7') {
+        event.preventDefault();
+        const tabIndex = parseInt(event.key) - 1;
+        if (tabIndex >= 0 && tabIndex < 7) {
+          activeTab.set(tabIndex);
+        }
+      }
+    }
     // Get content for the current tab
     $: currentContent = $notes[$activeTab] || '';
     // Format the content for preview
