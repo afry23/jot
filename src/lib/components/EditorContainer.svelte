@@ -17,16 +17,6 @@
   </script>
   
   <div class="editor-wrapper" style="--tab-color: {tabColors[$activeTab]};">
-    <div class="toggle-bar">
-      <button 
-        class="toggle-button" 
-        class:active={$viewMode === 'edit'} 
-        on:click={() => toggleViewMode()} 
-        aria-label="Toggle edit/preview mode"
-      >
-        {$viewMode === 'edit' ? 'Preview' : 'Edit'}
-      </button>
-    </div>
     
     <div class="content-container">
       {#if $viewMode === 'edit'}
@@ -43,38 +33,6 @@
       flex-direction: column;
       height: 100%;
       overflow: hidden;
-    }
-    
-    .toggle-bar {
-      padding: 8px 16px;
-      display: flex;
-      justify-content: flex-end;
-      background-color: rgba(0, 0, 0, 0.03);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    :global(.dark) .toggle-bar {
-      background-color: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .toggle-button {
-      background-color: transparent;
-      border: 1px solid var(--tab-color);
-      border-radius: 4px;
-      color: var(--tab-color);
-      padding: 4px 12px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    .toggle-button:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-    
-    :global(.dark) .toggle-button:hover {
-      background-color: rgba(255, 255, 255, 0.05);
     }
     
     .content-container {

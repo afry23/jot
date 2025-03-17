@@ -14,6 +14,12 @@ node_modules/
 
 # IDE related
 .idea
+typing
+internal
+.vscode
+*.tgz
+.eslintcache
+.svelte-kit
 
 # Test coverage
 coverage
