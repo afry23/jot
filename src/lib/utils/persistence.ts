@@ -1,4 +1,4 @@
-import { setNotes } from '$lib/stores/notes';
+import { setNotes, notesLoaded } from '$lib/stores/notes';
 import { invoke } from '@tauri-apps/api/core';
 
 // Save a note to storage
@@ -29,6 +29,9 @@ export async function saveNote(tabIndex: number, content: string) {
 // Load all notes from storage
 export async function loadNotes() {
   try {
+    // First, ensure we mark notes as not loaded during the loading process
+    notesLoaded.set(false);
+    
     // Try to load from localStorage first (faster startup)
     const notesData: Record<number, string> = {
       0: '', 1: '', 2: '', 3: '', 4: '', 5: '', 6: ''
@@ -55,12 +58,14 @@ export async function loadNotes() {
       localStorage.setItem(`jot-note-${tabIndex}`, content);
     }
     
-    // Update the store
+    // Update the store and mark as loaded
     setNotes(notesData);
     
     return true;
   } catch (error) {
     console.error('Error loading notes:', error);
+    // Even on error, we need to mark as loaded to prevent UI hanging
+    notesLoaded.set(true);
     return false;
   }
 }
