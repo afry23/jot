@@ -1,5 +1,7 @@
 import { writable } from 'svelte/store';
 
+export const notesLoaded = writable<boolean>(false);
+
 // Store for notes content
 // Index 0-6 corresponds to the 7 tabs
 export const notes = writable<Record<number, string>>({
@@ -23,4 +25,5 @@ export function updateNote(tabIndex: number, content: string) {
 // Reset notes (used when loading from storage)
 export function setNotes(notesData: Record<number, string>) {
   notes.set(notesData);
+  notesLoaded.set(true);
 }

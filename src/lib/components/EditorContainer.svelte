@@ -3,6 +3,7 @@
     import Preview from './Preview.svelte';
     import { viewMode, toggleViewMode } from '$lib/stores/viewMode';
     import { activeTab } from '$lib/stores/tabs';
+    import SimpleEditor from './SimpleEditor.svelte';
     
     // Tab colors for indicator
     let tabColors = [
@@ -20,7 +21,7 @@
     
     <div class="content-container">
       {#if $viewMode === 'edit'}
-        <Editor />
+        <SimpleEditor />
       {:else}
         <Preview />
       {/if}

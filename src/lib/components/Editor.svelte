@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { activeTab } from '$lib/stores/tabs';
-  import { notes, updateNote } from '$lib/stores/notes';
+  import { notes, notesLoaded, updateNote } from '$lib/stores/notes';
 
   let editorElement: HTMLTextAreaElement;
   let tabColors = [
@@ -32,16 +32,11 @@
       }
     }
   }
-  
-  let previousTab = -1;
-  
-  // Update editor content when active tab changes
-  $: if (editorElement && $notes[$activeTab] !== undefined) {
-    // Only update content if we've changed tabs
-    if (previousTab !== $activeTab) {
+ 
+  function updateEditorContent() {
+    if (editorElement) {
       const content = $notes[$activeTab] || '';
       editorElement.value = content;
-      previousTab = $activeTab;
       
       // Focus and place cursor at the end
       setTimeout(() => {
@@ -52,14 +47,23 @@
     }
   }
   
+  // Update when tab changes
+  $: if ($activeTab !== undefined) {
+    updateEditorContent();
+  }
+  
+  // Update when notes are loaded
+  $: if ($notesLoaded) {
+    updateEditorContent();
+  }
+  
   onMount(() => {
     if (editorElement) {
-      // Set initial content
-      editorElement.value = $notes[$activeTab] || '';
-      // Focus the editor
-      editorElement.focus();
+      // Initial content population
+      updateEditorContent();
     }
-  });
+  });  
+
 </script>
 
 <div 

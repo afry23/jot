@@ -16,6 +16,8 @@
     "@macfja/svelte-persistent-store": "^2.4.2",
     "@tauri-apps/api": "^2.3.0",
     "@tauri-apps/plugin-opener": "^2",
+    "@types/marked": "^5.0.2",
+    "marked": "^15.0.7",
     "svelte-spa-router": "^4.0.1"
   },
   "devDependencies": {
