@@ -1,0 +1,16 @@
+export const shortcuts = [
+    { key: "Ctrl+1-7", action: "Switch to tab 1-7" },
+    { key: "Ctrl+E", action: "Toggle edit/preview mode" },
+    { key: "Ctrl+D", action: "Toggle dark/light theme" },
+    { key: "Ctrl+B", action: "Bold text" },
+    { key: "Ctrl+I", action: "Italic text" },
+    { key: "Ctrl+T", action: "Insert timestamp" },
+    { key: "Tab", action: "Insert indentation" },
+    { key: "Shift+Tab", action: "Remove indentation" },
+    { key: "Ctrl+Z", action: "Undo" },
+    { key: "Ctrl+Y", action: "Redo" },
+    { key: "Ctrl+Shift+J", action: "Hide/Show Window" },
+    { key: "Ctrl+Shift+G", action: "Chat with AI"},
+    { key: "Ctrl+Shift+S", action: "Summarize with AI"},
+    { key: "Ctrl+Shift+B", action: "Create backup"},
+  ];
