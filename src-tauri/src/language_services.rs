@@ -21,7 +21,7 @@ impl Default for LanguageConfig {
         Self {
             languagetool_api_key: None,
             languagetool_username: None,
-            languagetool_endpoint: String::from("https://api.languagetool.org/v2/check"),
+            languagetool_endpoint: String::from("https://api.languagetoolplus.com/v2/check"),
             deepl_api_key: None,
             deepl_endpoint: String::from("https://api-free.deepl.com/v2/translate"),
         }
@@ -127,7 +127,6 @@ fn get_language_config(app_handle: &AppHandle) -> LanguageConfig {
 
     // Load secure credentials
     let _ = config.load_credentials(app_handle);
-
     config
 }
 
@@ -233,7 +232,6 @@ pub async fn translate_text(
     if text.trim().is_empty() {
         return Ok(serde_json::json!({ "translations": [] }));
     }
-
     let config = get_language_config(&app_handle);
 
     // Ensure we have an API key for DeepL
@@ -290,7 +288,7 @@ pub fn save_language_tool_config(
 
         // If username and API key are provided, save API key securely
         if let Some(key) = &api_key {
-            if !key.is_empty() && !user.is_empty() {
+            if !key.is_empty() && !user.is_empty() && !key.starts_with("default"){
                 credential_manager::store_languagetool_credential(user, key.clone())?;
             }
         }
@@ -314,7 +312,7 @@ pub fn save_deepl_config(
 
     // Store API key securely if provided
     if let Some(key) = api_key {
-        if !key.is_empty() {
+        if !key.is_empty() && !key.starts_with("default") {
             credential_manager::store_deepl_credential(app_handle.clone(), key)?;
         }
     }
