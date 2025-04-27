@@ -163,13 +163,6 @@ export async function translateText(
     return "";
   }
 
-  const config = get(languageConfig);
-  if (!config.deepl_api_key) {
-    const errorMessage = "DeepL API key is not configured";
-    translationError.set(errorMessage);
-    return "";
-  }
-
   isTranslationInProgress.set(true);
   translationError.set(null);
 

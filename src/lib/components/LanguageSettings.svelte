@@ -10,6 +10,8 @@
   } from "$lib/stores/languageServices";
   import Button from "./Button.svelte";
   import FormField from "./FormField.svelte";
+    import { invoke } from "@tauri-apps/api/core";
+    import { SettingsCommands } from "$lib/utils/tauriCommands";
 
   // Local state
   let languagetoolApiKey: string = "";
@@ -17,6 +19,8 @@
   let languagetoolEndpoint: string = "";
   let deeplApiKey: string = "";
   let deeplEndpoint: string = "";
+  let languageToolStatus: boolean = false;
+  let deeplStatus: boolean = false;
 
   // Success/error messages
   let ltSaveSuccess: boolean = false;
@@ -37,6 +41,8 @@
       deeplApiKey = $languageConfig.deepl_api_key || "";
       deeplEndpoint = $languageConfig.deepl_endpoint;
     }
+
+    await checkCredentialStatus();
   });
 
   // Clear timeouts on destroy
@@ -95,6 +101,20 @@
       deeplSaveError = `Error: ${error}`;
     }
   }
+
+  async function checkCredentialStatus() {
+  // For LanguageTool
+  if (languagetoolUsername) {
+    const hasCredential = await invoke(SettingsCommands.HAS_LANGUAGETOOL_API_KEY, { username: languagetoolUsername });
+    console.log("LanguageTool credential status:", hasCredential);
+    languagetoolApiKey = hasCredential ? 'default' : '';
+  }
+  
+  // For DeepL
+  const hasDeeplCredential = await invoke('has_deepl_credential');
+  console.log("DeepL credential status:", hasDeeplCredential);
+  deeplApiKey = hasDeeplCredential ? 'default' : '';
+}
 
   // Reset to default configuration
   function resetLTDefaults() {

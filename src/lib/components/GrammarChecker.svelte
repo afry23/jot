@@ -20,7 +20,7 @@
 
   // Local state
   let currentContent: string = "";
-  let selectedLanguage: string = "en-US";
+  let selectedLanguage: string = "auto";
   let debounceTimer: number | null = null;
   let localMatches: GrammarError[] = []; // Local copy of matches to modify without rechecking
   let lastCheckedContent: string = ""; // Keep track of last checked content
