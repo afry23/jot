@@ -8,6 +8,7 @@
   import { tabColors, withOpacity } from "$lib/utils/colors";
   import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import { saveNote } from "$lib/utils/persistence";
 
   // Reference to editor elements
   let plainTextEditor: HTMLTextAreaElement;
@@ -280,11 +281,16 @@
     }
   }
 
-  // Plain text editor input handler
   function handleInput() {
     if (plainTextEditor) {
-      updateNote($activeTab, plainTextEditor.value);
+      const newContent = plainTextEditor.value;
+      updateNote($activeTab, newContent);
       cursorPosition = plainTextEditor.selectionStart;
+
+      if (newContent === "") {
+        saveNote($activeTab, newContent);
+        cursorPosition = 0;
+      }
     }
   }
 
@@ -327,7 +333,7 @@
   function handleViewModeChange() {
     console.log(`View mode changed from ${previousViewMode} to ${$viewMode}`);
     console.log(
-      `Current cursor position: ${cursorPosition}, scroll: ${scrollTop}`
+      `Current cursor position: ${cursorPosition}, scroll: ${scrollTop}`,
     );
 
     if (previousViewMode === "edit" && $viewMode === "preview") {
@@ -337,7 +343,7 @@
         cursorPosition = plainTextEditor.selectionStart;
         scrollTop = plainTextEditor.scrollTop;
         console.log(
-          `Saved from edit mode - cursor: ${cursorPosition}, scroll: ${scrollTop}`
+          `Saved from edit mode - cursor: ${cursorPosition}, scroll: ${scrollTop}`,
         );
       }
 
@@ -370,7 +376,7 @@
           // Focus the editor
           plainTextEditor.focus();
           console.log(
-            `Applied to edit mode - cursor: ${cursorPosition}, scroll: ${scrollTop}`
+            `Applied to edit mode - cursor: ${cursorPosition}, scroll: ${scrollTop}`,
           );
         }
       }, 50);

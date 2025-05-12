@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import { pushToHistory } from "./history";
+import { saveNote } from "$lib/utils/persistence";
 
 export const notesLoaded = writable<boolean>(false);
 
@@ -24,6 +25,12 @@ export function updateNote(tabIndex: number, content: string) {
     state[tabIndex] = content;
     return state;
   });
+
+  // If content is empty, ensure it gets saved
+  if (content === "") {
+    console.log(`Explicitly saving empty content for tab ${tabIndex}`);
+    saveNote(tabIndex, "");
+  }
 }
 
 // Reset notes (used when loading from storage)
