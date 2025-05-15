@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { activeTab } from "$lib/stores/tabs";
   import { notes, updateNote } from "$lib/stores/notes";
   import { theme, fontSize } from "$lib/stores/settings";
@@ -7,7 +7,6 @@
   import { formatMarkdown } from "$lib/utils/textFormatting";
   import { tabColors, withOpacity } from "$lib/utils/colors";
   import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import { saveNote } from "$lib/utils/persistence";
 
   // Reference to editor elements
@@ -58,7 +57,7 @@
   let scrollTop = 0;
 
   // Key shortcuts for formatting
-  function handleKeydown(event: KeyboardEvent) {
+  async function handleKeydown(event: KeyboardEvent) {
     // Update cursor position on any keydown
     if (plainTextEditor) {
       cursorPosition = plainTextEditor.selectionStart;
@@ -93,11 +92,10 @@
       updateNote($activeTab, newContent);
 
       // Move cursor after the inserted timestamp
-      setTimeout(() => {
-        plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-          start + formattedTimestamp.length;
-        cursorPosition = plainTextEditor.selectionStart;
-      }, 0);
+      await tick();
+      plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+        start + formattedTimestamp.length;
+      cursorPosition = plainTextEditor.selectionStart;
     }
 
     // Tab key in plain text editor
@@ -126,11 +124,10 @@
           updateNote($activeTab, newContent);
 
           // Schedule cursor position update after DOM updates
-          setTimeout(() => {
-            plainTextEditor.value = newContent;
-            plainTextEditor.selectionStart = start;
-            plainTextEditor.selectionEnd = start + unindented.length;
-          }, 0);
+          await tick();
+          plainTextEditor.value = newContent;
+          plainTextEditor.selectionStart = start;
+          plainTextEditor.selectionEnd = start + unindented.length;
         } else {
           // Indent selected lines
           const indented = selectedText
@@ -146,11 +143,10 @@
           updateNote($activeTab, newContent);
 
           // Schedule cursor position update after DOM updates
-          setTimeout(() => {
-            plainTextEditor.value = newContent;
-            plainTextEditor.selectionStart = start;
-            plainTextEditor.selectionEnd = start + indented.length;
-          }, 0);
+          await tick();
+          plainTextEditor.value = newContent;
+          plainTextEditor.selectionStart = start;
+          plainTextEditor.selectionEnd = start + indented.length;
         }
       } else {
         // No selection, just insert or remove tab at cursor position
@@ -169,11 +165,10 @@
             updateNote($activeTab, newContent);
 
             // Move cursor to new position
-            setTimeout(() => {
-              plainTextEditor.value = newContent;
-              plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-                Math.max(start - 2, lineStart);
-            }, 0);
+            await tick();
+            plainTextEditor.value = newContent;
+            plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+              Math.max(start - 2, lineStart);
           }
         } else {
           // Regular tab - insert spaces
@@ -185,11 +180,10 @@
           updateNote($activeTab, newContent);
 
           // Move cursor after the inserted tab
-          setTimeout(() => {
-            plainTextEditor.value = newContent;
-            plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-              start + 2;
-          }, 0);
+          await tick();
+          plainTextEditor.value = newContent;
+          plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+            start + 2;
         }
       }
     }
@@ -229,11 +223,10 @@
         updateNote($activeTab, newContent);
 
         // Place cursor between the markers
-        setTimeout(() => {
-          plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-            start + 2;
-          cursorPosition = plainTextEditor.selectionStart;
-        }, 0);
+        await tick();
+        plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+          start + 2;
+        cursorPosition = plainTextEditor.selectionStart;
       }
     }
 
@@ -257,11 +250,10 @@
         updateNote($activeTab, newContent);
 
         // Adjust selection to include the * markers
-        setTimeout(() => {
+        await tick();
           plainTextEditor.selectionStart = start;
           plainTextEditor.selectionEnd = start + italicText.length;
           cursorPosition = plainTextEditor.selectionStart;
-        }, 0);
       } else {
         // No selection, just insert ** and place cursor in between
         const italicMarkers = "**";
@@ -272,11 +264,10 @@
         updateNote($activeTab, newContent);
 
         // Place cursor between the markers
-        setTimeout(() => {
+        await tick();
           plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
             start + 1;
           cursorPosition = plainTextEditor.selectionStart;
-        }, 0);
       }
     }
   }
