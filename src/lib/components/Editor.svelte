@@ -56,6 +56,167 @@
   let cursorPosition = $notes[$activeTab] ? $notes[$activeTab].length : 0;
   let scrollTop = 0;
 
+  async function insertTimestamp() {
+    const now = new Date();
+    const formattedDate = now.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    const start = plainTextEditor.selectionStart;
+    const end = plainTextEditor.selectionEnd;
+
+    // Insert timestamp at cursor position
+    const formattedTimestamp = `**${formattedDate}** `;
+    const currentContent = $notes[$activeTab] || "";
+    const newContent =
+      currentContent.substring(0, start) +
+      formattedTimestamp +
+      currentContent.substring(end);
+
+    updateNote($activeTab, newContent);
+
+    await tick();
+    // Move cursor after the inserted timestamp
+    plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+      start + formattedTimestamp.length;
+    cursorPosition = plainTextEditor.selectionStart;
+  }
+
+  async function toggleBold() {
+    const start = plainTextEditor.selectionStart;
+    const end = plainTextEditor.selectionEnd;
+    const currentContent = $notes[$activeTab] || "";
+
+    if (start !== end) {
+      // Text selected, wrap it in ** for bold
+      const selectedText = currentContent.substring(start, end);
+      const isBold =
+        selectedText.startsWith("**") && selectedText.endsWith("**");
+
+      const newContent =
+        currentContent.substring(0, start) +
+        (isBold ? selectedText.slice(2, -2) : `**${selectedText}**`) +
+        currentContent.substring(end);
+
+      updateNote($activeTab, newContent);
+
+      await tick();
+      // Adjust selection to include the ** markers
+      plainTextEditor.selectionStart = start;
+      plainTextEditor.selectionEnd =
+        start + (isBold ? selectedText.length - 4 : selectedText.length + 4);
+      cursorPosition = plainTextEditor.selectionStart;
+    }
+  }
+
+  async function toggleItalic() {
+    const start = plainTextEditor.selectionStart;
+    const end = plainTextEditor.selectionEnd;
+    const currentContent = $notes[$activeTab] || "";
+
+    if (start !== end) {
+      // Text selected, wrap it in * for italic
+      const selectedText = currentContent.substring(start, end);
+      const isItalic =
+        selectedText.startsWith("*") && selectedText.endsWith("*");
+
+      const newContent =
+        currentContent.substring(0, start) +
+        (isItalic ? selectedText.slice(1, -1) : `*${selectedText}*`) +
+        currentContent.substring(end);
+
+      updateNote($activeTab, newContent);
+
+      // Adjust selection to include the * markers
+      await tick();
+      plainTextEditor.selectionStart = start;
+      plainTextEditor.selectionEnd =
+        start + (isItalic ? selectedText.length - 2 : selectedText.length + 2);
+      cursorPosition = plainTextEditor.selectionStart;
+    }
+  }
+
+  // Add a list shortcut function
+  async function toggleList(ordered = false) {
+    const start = plainTextEditor.selectionStart;
+    const end = plainTextEditor.selectionEnd;
+    const currentContent = $notes[$activeTab] || "";
+
+    // Get the beginning of the current line
+    const lineStart = currentContent.lastIndexOf("\n", start - 1) + 1;
+    const linePrefix = currentContent.substring(lineStart, start);
+
+    // Check if we're already in a list
+    const isAlreadyList = ordered
+      ? /^\d+\.\s/.test(linePrefix)
+      : /^-\s/.test(linePrefix);
+
+    let newContent;
+    let listPrefix = "";
+
+    if (isAlreadyList) {
+      // Remove list formatting
+      const newLinePrefix = linePrefix.replace(
+        ordered ? /^\d+\.\s/ : /^-\s/,
+        "",
+      );
+      newContent =
+        currentContent.substring(0, lineStart) +
+        newLinePrefix +
+        currentContent.substring(start);
+    } else {
+      // Add list formatting
+      listPrefix = ordered ? "1. " : "- ";
+      newContent =
+        currentContent.substring(0, lineStart) +
+        listPrefix +
+        currentContent.substring(lineStart);
+    }
+
+    updateNote($activeTab, newContent);
+
+    // Adjust cursor position
+    await tick();
+    const cursorAdjustment = isAlreadyList ? -2 : 2;
+    plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+      start + (isAlreadyList ? -listPrefix.length : listPrefix.length);
+    cursorPosition = plainTextEditor.selectionStart;
+  }
+
+  async function insertLink() {
+    const start = plainTextEditor.selectionStart;
+    const end = plainTextEditor.selectionEnd;
+    const currentContent = $notes[$activeTab] || "";
+
+    let linkText = "link text";
+    let linkTemplate = "[link text](url)";
+
+    if (start !== end) {
+      // Use the selected text as the link text
+      linkText = currentContent.substring(start, end);
+      linkTemplate = `[${linkText}](url)`;
+    }
+
+    const newContent =
+      currentContent.substring(0, start) +
+      linkTemplate +
+      currentContent.substring(end);
+
+    updateNote($activeTab, newContent);
+
+    // Position cursor in the URL part
+    await tick();
+    const urlStart = start + linkText.length + 3; // After "[linkText]("
+    plainTextEditor.selectionStart = urlStart;
+    plainTextEditor.selectionEnd = urlStart + 3; // Select "url"
+    cursorPosition = plainTextEditor.selectionStart;
+  }
+
   // Key shortcuts for formatting
   async function handleKeydown(event: KeyboardEvent) {
     // Update cursor position on any keydown
@@ -63,39 +224,44 @@
       cursorPosition = plainTextEditor.selectionStart;
     }
 
-    // Insert Date/Time shortcut
-    if (event.ctrlKey && event.key === "t") {
-      event.preventDefault();
-
-      // Format current date and time
-      const now = new Date();
-      const formattedDate = now.toLocaleString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-
-      const start = plainTextEditor.selectionStart;
-      const end = plainTextEditor.selectionEnd;
-
-      // Insert timestamp at cursor position
-      const formattedTimestamp = `**${formattedDate}** `;
-      const currentContent = $notes[$activeTab] || "";
-      const newContent =
-        currentContent.substring(0, start) +
-        formattedTimestamp +
-        currentContent.substring(end);
-
-      updateNote($activeTab, newContent);
-
-      // Move cursor after the inserted timestamp
-      await tick();
-      plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-        start + formattedTimestamp.length;
-      cursorPosition = plainTextEditor.selectionStart;
+    if (event.ctrlKey) {
+      switch (event.key) {
+        case "t":
+          // CTRL+T for date/time shortcut
+          event.preventDefault();
+          insertTimestamp();
+          break;
+        case "b":
+          event.preventDefault();
+          toggleBold();
+          break;
+        case "i":
+          event.preventDefault();
+          toggleItalic();
+          break;
+        case "z":
+          // CTRL+Z for undo
+          event.preventDefault();
+          handleUndo();
+          break;
+        case "y":
+          // CTRL+Y for redo
+          event.preventDefault();
+          handleRedo();
+          break;
+        case "l":
+          event.preventDefault();
+          toggleList(false); // Unordered list
+          break;
+        case "o":
+          event.preventDefault();
+          toggleList(true); // Ordered list
+          break;
+        case "k":
+          event.preventDefault();
+          insertLink();
+          break;
+      }
     }
 
     // Tab key in plain text editor
@@ -187,89 +353,6 @@
         }
       }
     }
-
-    // Add CTRL+B for bold formatting
-    if (event.ctrlKey && event.key === "b") {
-      event.preventDefault();
-
-      const start = plainTextEditor.selectionStart;
-      const end = plainTextEditor.selectionEnd;
-      const currentContent = $notes[$activeTab] || "";
-
-      if (start !== end) {
-        // Text selected, wrap it in ** for bold
-        const selectedText = currentContent.substring(start, end);
-        const boldText = `**${selectedText}**`;
-
-        const newContent =
-          currentContent.substring(0, start) +
-          boldText +
-          currentContent.substring(end);
-        updateNote($activeTab, newContent);
-
-        // Adjust selection to include the ** markers
-        setTimeout(() => {
-          plainTextEditor.selectionStart = start;
-          plainTextEditor.selectionEnd = start + boldText.length;
-          cursorPosition = plainTextEditor.selectionStart;
-        }, 0);
-      } else {
-        // No selection, just insert ** ** and place cursor in between
-        const boldMarkers = "****";
-        const newContent =
-          currentContent.substring(0, start) +
-          boldMarkers +
-          currentContent.substring(end);
-        updateNote($activeTab, newContent);
-
-        // Place cursor between the markers
-        await tick();
-        plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-          start + 2;
-        cursorPosition = plainTextEditor.selectionStart;
-      }
-    }
-
-    // Add CTRL+I for italic formatting
-    if (event.ctrlKey && event.key === "i") {
-      event.preventDefault();
-
-      const start = plainTextEditor.selectionStart;
-      const end = plainTextEditor.selectionEnd;
-      const currentContent = $notes[$activeTab] || "";
-
-      if (start !== end) {
-        // Text selected, wrap it in * for italic
-        const selectedText = currentContent.substring(start, end);
-        const italicText = `*${selectedText}*`;
-
-        const newContent =
-          currentContent.substring(0, start) +
-          italicText +
-          currentContent.substring(end);
-        updateNote($activeTab, newContent);
-
-        // Adjust selection to include the * markers
-        await tick();
-          plainTextEditor.selectionStart = start;
-          plainTextEditor.selectionEnd = start + italicText.length;
-          cursorPosition = plainTextEditor.selectionStart;
-      } else {
-        // No selection, just insert ** and place cursor in between
-        const italicMarkers = "**";
-        const newContent =
-          currentContent.substring(0, start) +
-          italicMarkers +
-          currentContent.substring(end);
-        updateNote($activeTab, newContent);
-
-        // Place cursor between the markers
-        await tick();
-          plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-            start + 1;
-          cursorPosition = plainTextEditor.selectionStart;
-      }
-    }
   }
 
   function handleInput() {
@@ -301,25 +384,6 @@
     }
   }
 
-  // Apply font size to editor elements
-  function applyFontSize(size = $fontSize) {
-    if (!size || !fontSizes[size]) return;
-
-    console.log(`Applying font size: ${size}`);
-
-    // Apply to plain text editor
-    if (plainTextEditor) {
-      plainTextEditor.style.fontSize = fontSizes[size].editor;
-      plainTextEditor.style.lineHeight = fontSizes[size].lineHeight;
-    }
-
-    // Apply to preview container
-    if (previewContainer) {
-      previewContainer.style.fontSize = fontSizes[size].editor;
-      previewContainer.style.lineHeight = fontSizes[size].lineHeight;
-    }
-  }
-
   // Handle view mode transitions
   function handleViewModeChange() {
     console.log(`View mode changed from ${previousViewMode} to ${$viewMode}`);
@@ -337,14 +401,6 @@
           `Saved from edit mode - cursor: ${cursorPosition}, scroll: ${scrollTop}`,
         );
       }
-
-      // Apply to preview mode (with slight delay to ensure rendering)
-      setTimeout(() => {
-        if (previewContainer) {
-          // Apply font size to preview
-          applyFontSize($fontSize);
-        }
-      }, 50);
     } else if (previousViewMode === "preview" && $viewMode === "edit") {
       // Switching from preview to edit
       // Capture scroll position from preview
@@ -357,7 +413,6 @@
       setTimeout(() => {
         if (plainTextEditor) {
           // Apply the font size to edit mode
-          applyFontSize($fontSize);
 
           // Set cursor position
           plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
@@ -387,13 +442,6 @@
     handleViewModeChange();
   }
 
-  // Detect font size changes and apply them
-  $: if ($fontSize !== previousFontSize) {
-    console.log(`Font size changed from ${previousFontSize} to ${$fontSize}`);
-    previousFontSize = $fontSize;
-    setTimeout(() => applyFontSize($fontSize), 10);
-  }
-
   // Function to update editor content based on current tab
   function updateEditorContent() {
     if ($notes[$activeTab] !== undefined) {
@@ -413,9 +461,6 @@
               cursorPosition;
           }
         }
-
-        // Apply font size
-        applyFontSize($fontSize);
       }, 10);
     }
   }
@@ -452,7 +497,6 @@
     // Apply font size after component is mounted
     setTimeout(() => {
       updateEditorContent();
-      applyFontSize($fontSize);
     }, 20);
 
     // Cleanup
@@ -483,6 +527,7 @@
       on:scroll={handleScroll}
       spellcheck="true"
       aria-label="Plain text editor"
+      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
     ></textarea>
   {:else}
     <!-- Preview mode - read-only view of rendered markdown -->
@@ -491,6 +536,7 @@
       class="preview-container"
       on:scroll={handleScroll}
       aria-label="Preview"
+      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
     >
       {#if !$notes[$activeTab] || !$notes[$activeTab].trim()}
         <div class="placeholder">Start writing...</div>
