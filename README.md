@@ -60,6 +60,11 @@ Jot is a lightweight, minimalist note-taking application built with Tauri (Rust)
 | Ctrl+B      | Bold text                   |
 | Ctrl+I      | Italic text                 |
 | Ctrl+T      | Insert timestamp            |
+| Ctrl+L      | Insert unordered list       |
+| Ctrl+O      | Insert ordered list         |
+| Ctrl+K      | Insert link                 |
+| Ctrl+Z      | Undo                        |
+| Ctrl+Y      | Redo                        |
 | Tab         | Insert indentation          |
 | Shift+Tab   | Remove indentation          |
 
@@ -70,7 +75,9 @@ Jot supports common markdown syntax:
 - `**bold text**` - Bold text
 - `*italic text*` - Italic text
 - `- item` - List item
+- `1. item` - Ordered list item
 - `[text](url)` - Link
+- Headings with `#`, `##`, etc.
 
 ## Project Structure
 
@@ -95,7 +102,7 @@ jot/
 - **Frontend**: Svelte, TypeScript
 - **Backend**: Rust, Tauri
 - **Storage**: Local file system for persistence
-- **Bundle Size**: <10MB
+- **Bundle Size**: <15MB
 - **Startup Time**: <1 second
 - **Dependencies**: Minimal external dependencies to maintain small footprint
 
@@ -121,7 +128,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the GNU GPL Version 3 License - see the LICENSE file for details.
 
 ## Acknowledgments
 
