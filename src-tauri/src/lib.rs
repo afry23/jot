@@ -207,19 +207,6 @@ pub fn run() {
         tauri::Builder::default().plugin(tauri_plugin_global_shortcut::Builder::new().build());
     tauri_app
         .plugin(tauri_plugin_opener::init())
-        .on_window_event(|app_handle, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                match app_handle.hide() {
-                    Ok(()) => {
-                        log::debug!("Window hidden successfully");
-                    }
-                    Err(e) => {
-                        log::error!("Error hiding Window: {}", e);
-                    }
-                }
-            }
-        })
         .setup(|app| {
             logging::init_logger(app.app_handle())?;
             info!("Jot application starting up");
