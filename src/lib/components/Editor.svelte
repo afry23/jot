@@ -52,7 +52,7 @@
   let previousViewMode = $viewMode;
 
   // Initial cursor position - default to end of text
-  let cursorPosition = $notes[$activeTab] ? $notes[$activeTab].length : 0;
+  let cursorPosition = 0;
   let scrollTop = 0;
 
   async function insertTimestamp() {
@@ -518,11 +518,9 @@
           plainTextEditor.value = $notes[$activeTab] || "";
 
           // Focus and place cursor at the end if tab changed
-          if (previousTab !== $activeTab) {
             plainTextEditor.focus();
             plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
               cursorPosition;
-          }
         }
       }, 10);
     }
