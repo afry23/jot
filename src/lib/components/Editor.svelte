@@ -8,6 +8,7 @@
   import { tabColors, withOpacity } from "$lib/utils/colors";
   import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
   import { saveNote } from "$lib/utils/persistence";
+    import { cursorPositions, scrollPositions } from "$lib/stores/cursorPostionStore";
 
   // Reference to editor elements
   let plainTextEditor: HTMLTextAreaElement;
@@ -54,6 +55,36 @@
   // Initial cursor position - default to end of text
   let cursorPosition = 0;
   let scrollTop = 0;
+
+  // Save cursor position when it changes
+  function saveCursorPosition() {
+    if (plainTextEditor && $activeTab !== undefined) {
+      const position = plainTextEditor.selectionStart;
+      cursorPositions.update((positions) => {
+        positions[$activeTab] = position;
+        return positions;
+      });
+    }
+  }
+
+  // Save scroll position when it changes
+  function saveScrollPosition() {
+    if ($viewMode === "edit" && plainTextEditor && $activeTab !== undefined) {
+      scrollPositions.update((positions) => {
+        positions[$activeTab] = plainTextEditor.scrollTop;
+        return positions;
+      });
+    } else if (
+      $viewMode === "preview" &&
+      previewContainer &&
+      $activeTab !== undefined
+    ) {
+      scrollPositions.update((positions) => {
+        positions[$activeTab] = previewContainer.scrollTop;
+        return positions;
+      });
+    }
+  }
 
   async function insertTimestamp() {
     const now = new Date();
@@ -423,6 +454,7 @@
       const newContent = plainTextEditor.value;
       updateNote($activeTab, newContent);
       cursorPosition = plainTextEditor.selectionStart;
+      saveCursorPosition();
 
       if (newContent === "") {
         saveNote($activeTab, newContent);
@@ -435,6 +467,7 @@
   function handleSelectionChange() {
     if (plainTextEditor) {
       cursorPosition = plainTextEditor.selectionStart;
+      saveCursorPosition();
     }
   }
 
@@ -442,8 +475,10 @@
   function handleScroll() {
     if ($viewMode === "edit" && plainTextEditor) {
       scrollTop = plainTextEditor.scrollTop;
+      saveScrollPosition();
     } else if ($viewMode === "preview" && previewContainer) {
       scrollTop = previewContainer.scrollTop;
+      saveScrollPosition();
     }
   }
 
@@ -509,8 +544,18 @@
   function updateEditorContent() {
     if ($notes[$activeTab] !== undefined) {
       // Reset cursor position to end of text for new tab
-      cursorPosition = $notes[$activeTab] ? $notes[$activeTab].length : 0;
-      scrollTop = 0;
+
+      const storedCursorPosition = $cursorPositions[$activeTab];
+      cursorPosition =
+        storedCursorPosition !== undefined
+          ? storedCursorPosition
+          : $notes[$activeTab]
+            ? $notes[$activeTab].length
+            : 0;
+
+      // Get stored scroll position for this tab or default to top
+      const storedScrollPosition = $scrollPositions[$activeTab];
+      scrollTop = storedScrollPosition !== undefined ? storedScrollPosition : 0;
 
       // Update the UI
       setTimeout(() => {
@@ -518,9 +563,9 @@
           plainTextEditor.value = $notes[$activeTab] || "";
 
           // Focus and place cursor at the end if tab changed
-            plainTextEditor.focus();
-            plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-              cursorPosition;
+          plainTextEditor.focus();
+          plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+            cursorPosition;
         }
       }, 10);
     }
