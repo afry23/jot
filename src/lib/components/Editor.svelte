@@ -50,7 +50,6 @@
   // Track editor state
   let previousTab = -1;
   let previousViewMode = $viewMode;
-  let previousFontSize = $fontSize;
 
   // Initial cursor position - default to end of text
   let cursorPosition = $notes[$activeTab] ? $notes[$activeTab].length : 0;
@@ -147,45 +146,109 @@
     const end = plainTextEditor.selectionEnd;
     const currentContent = $notes[$activeTab] || "";
 
-    // Get the beginning of the current line
-    const lineStart = currentContent.lastIndexOf("\n", start - 1) + 1;
-    const linePrefix = currentContent.substring(lineStart, start);
+    // Check if we have a multiline selection
+    const selectedText = currentContent.substring(start, end);
+    const isMultiLine = selectedText.includes("\n");
 
-    // Check if we're already in a list
-    const isAlreadyList = ordered
-      ? /^\d+\.\s/.test(linePrefix)
-      : /^-\s/.test(linePrefix);
+    if (isMultiLine) {
+      // Handle multiline case
+      const firstLineStart = currentContent.lastIndexOf("\n", start - 1) + 1;
+      const lastLineEnd =
+        end === currentContent.length ? end : currentContent.indexOf("\n", end);
+      const lastLineEnd2 =
+        lastLineEnd === -1 ? currentContent.length : lastLineEnd;
 
-    let newContent;
-    let listPrefix = "";
-
-    if (isAlreadyList) {
-      // Remove list formatting
-      const newLinePrefix = linePrefix.replace(
-        ordered ? /^\d+\.\s/ : /^-\s/,
-        "",
+      // Get all the affected text (including complete first and last lines)
+      const affectedText = currentContent.substring(
+        firstLineStart,
+        lastLineEnd2,
       );
-      newContent =
-        currentContent.substring(0, lineStart) +
-        newLinePrefix +
-        currentContent.substring(start);
+      const lines = affectedText.split("\n");
+
+      // Check if all lines are already lists of the same type
+      const allAlreadyListed = lines.every((line) =>
+        ordered ? /^\d+\.\s/.test(line) : /^-\s/.test(line),
+      );
+
+      let newLines;
+
+      if (allAlreadyListed) {
+        // Remove list formatting from all lines
+        newLines = lines.map((line) =>
+          line.replace(ordered ? /^\d+\.\s/ : /^-\s/, ""),
+        );
+      } else {
+        // Add list formatting to all lines
+        newLines = lines.map((line, index) => {
+          // If line is already a list item of the type we're converting to, leave it alone
+          if (ordered && /^\d+\.\s/.test(line)) return line;
+          if (!ordered && /^-\s/.test(line)) return line;
+
+          // If it's the other type of list, convert it
+          if (ordered && /^-\s/.test(line))
+            return line.replace(/^-\s/, `${index + 1}. `);
+          if (!ordered && /^\d+\.\s/.test(line))
+            return line.replace(/^\d+\.\s/, "- ");
+
+          // Otherwise add new list formatting
+          return ordered ? `${index + 1}. ${line}` : `- ${line}`;
+        });
+      }
+
+      // Update the content
+      const newContent =
+        currentContent.substring(0, firstLineStart) +
+        newLines.join("\n") +
+        currentContent.substring(lastLineEnd2);
+
+      updateNote($activeTab, newContent);
+
+      // Update selection to encompass the modified text
+      await tick();
+      plainTextEditor.selectionStart = firstLineStart;
+      plainTextEditor.selectionEnd =
+        firstLineStart + newLines.join("\n").length;
+      cursorPosition = plainTextEditor.selectionStart;
     } else {
-      // Add list formatting
-      listPrefix = ordered ? "1. " : "- ";
-      newContent =
-        currentContent.substring(0, lineStart) +
-        listPrefix +
-        currentContent.substring(lineStart);
+      // Get the beginning of the current line
+      const lineStart = currentContent.lastIndexOf("\n", start - 1) + 1;
+      const linePrefix = currentContent.substring(lineStart, start);
+
+      // Check if we're already in a list
+      const isAlreadyList = ordered
+        ? /^\d+\.\s/.test(linePrefix)
+        : /^-\s/.test(linePrefix);
+
+      let newContent;
+      let listPrefix = "";
+
+      if (isAlreadyList) {
+        // Remove list formatting
+        const newLinePrefix = linePrefix.replace(
+          ordered ? /^\d+\.\s/ : /^-\s/,
+          "",
+        );
+        newContent =
+          currentContent.substring(0, lineStart) +
+          newLinePrefix +
+          currentContent.substring(start);
+      } else {
+        // Add list formatting
+        listPrefix = ordered ? "1. " : "- ";
+        newContent =
+          currentContent.substring(0, lineStart) +
+          listPrefix +
+          currentContent.substring(lineStart);
+      }
+
+      updateNote($activeTab, newContent);
+
+      // Adjust cursor position
+      await tick();
+      plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
+        start + (isAlreadyList ? -listPrefix.length : listPrefix.length);
+      cursorPosition = plainTextEditor.selectionStart;
     }
-
-    updateNote($activeTab, newContent);
-
-    // Adjust cursor position
-    await tick();
-    const cursorAdjustment = isAlreadyList ? -2 : 2;
-    plainTextEditor.selectionStart = plainTextEditor.selectionEnd =
-      start + (isAlreadyList ? -listPrefix.length : listPrefix.length);
-    cursorPosition = plainTextEditor.selectionStart;
   }
 
   async function insertLink() {
@@ -527,7 +590,9 @@
       on:scroll={handleScroll}
       spellcheck="true"
       aria-label="Plain text editor"
-      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
+      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[
+        $fontSize
+      ]?.lineHeight};"
     ></textarea>
   {:else}
     <!-- Preview mode - read-only view of rendered markdown -->
@@ -536,7 +601,9 @@
       class="preview-container"
       on:scroll={handleScroll}
       aria-label="Preview"
-      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
+      style="font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[
+        $fontSize
+      ]?.lineHeight};"
     >
       {#if !$notes[$activeTab] || !$notes[$activeTab].trim()}
         <div class="placeholder">Start writing...</div>
