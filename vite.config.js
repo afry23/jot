@@ -35,6 +35,7 @@ export default defineConfig(async () => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
+    allowedHosts: ["1420-afry23-jot-42j8irul4q.app.codeanywhere.com", "localhost"],
     port: 1420,
     strictPort: true,
     host: host || false,
