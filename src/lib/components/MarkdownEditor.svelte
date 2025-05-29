@@ -230,7 +230,70 @@
                     doc: defaultMarkdownParser.parse(content),
                     plugins: plugins,
                 }),
+                handleClick: (view, pos, event) => {
+                    const { node } = view.state.doc.resolve(pos);
+
+                    // If it's a text node, check if it has a link mark
+                    if (node && node.isText) {
+                        const marks = node.marks;
+                        const linkMark = marks.find(
+                            (mark) => mark.type === schema.marks.link,
+                        );
+
+                        if (linkMark) {
+                            event.preventDefault();
+                            const href = linkMark.attrs.href;
+
+                            // Check if we need to use Tauri's API for opening links
+                            // or just use the browser's window.open
+                            try {
+                                // For Tauri apps
+                                // Import this at the top: import { open } from '@tauri-apps/api/shell';
+                                open(href);
+
+                                // For browser/non-Tauri environments:
+                                window.open(
+                                    href,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                );
+                            } catch (e) {
+                                console.error("Error opening link:", e);
+                            }
+
+                            return true;
+                        }
+                    }
+                    return false;
+                },
             });
+
+            this.container.addEventListener('click', this.handleContainerClick.bind(this));
+        }
+
+        private handleContainerClick(e: MouseEvent): void {
+            // Walk up the DOM tree to find if a link was clicked
+            let target = e.target as HTMLElement;
+            while (target && target !== this.container) {
+                if (target.tagName === "A") {
+                    e.preventDefault();
+                    const href = target.getAttribute("href");
+                    if (href) {
+                        try {
+                            // For Tauri apps
+                            // Import this at the top: import { open } from '@tauri-apps/api/shell';
+                            open(href);
+
+                            // For browser/non-Tauri environments:
+                            window.open(href, "_blank", "noopener,noreferrer");
+                        } catch (e) {
+                            console.error("Error opening link:", e);
+                        }
+                    }
+                    return;
+                }
+                target = target.parentElement;
+            }
         }
 
         get content(): string {
