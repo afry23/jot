@@ -129,9 +129,9 @@
             // Choose plugins based on showMenuBar prop
             const plugins = [
                 buildInputRules(schema),
-          history(),
-          keymap(buildKeymap(schema)),
-          keymap(baseKeymap),
+                history(),
+                keymap(buildKeymap(schema)),
+                keymap(baseKeymap),
                 keymap({
                     "Mod-b": (state, dispatch) => {
                         const { from, to } = state.selection;
@@ -489,6 +489,23 @@
 
     :global(.ProseMirror li) {
         margin: 4px 0;
+    }
+
+    :global(.ProseMirror ul) {
+        list-style-type: disc;
+        margin: 10px 0;
+        padding-left: 28px;
+    }
+
+    :global(.ProseMirror ol) {
+        list-style-type: decimal;
+        margin: 10px 0;
+        padding-left: 28px;
+    }
+
+    :global(.ProseMirror ol li) {
+        padding-left: 4px; /* Add a bit of padding for the list marker */
+        display: list-item;
     }
 
     :global(.ProseMirror blockquote) {
