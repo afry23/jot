@@ -338,7 +338,15 @@
         class="editor-container"
         bind:this={editorContainer}
         class:dark-theme={$theme === "dark"}
-        style="--tab-color: {displayColor}; font-size: {fontSizes[$fontSize]
+        style="--tab-color: {displayColor}; 
+               --muted-color: {mutedColor};
+               --h1-color: {heading1Color};
+               --h2-color: {heading2Color};
+               --h3-color: {heading3Color};
+               --h4-color: {heading4Color};
+               --h5-color: {heading5Color};
+               --h6-color: {heading6Color};
+            font-size: {fontSizes[$fontSize]
             ?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
     ></div>
 </div>
@@ -411,27 +419,49 @@
     }
 
     :global(.ProseMirror h1) {
-        font-size: 28px;
+        font-size: 1.8em;
         font-weight: bold;
         margin: 20px 0 12px 0;
-        color: inherit;
+        color: var(--h1-color);
         border-bottom: 2px solid var(--tab-color, #e9ecef);
         padding-bottom: 8px;
     }
 
     :global(.ProseMirror h2) {
-        font-size: 22px;
+        font-size: 1.5em;
         font-weight: bold;
         margin: 18px 0 10px 0;
-        color: inherit;
+        color: var(--h2-color);
     }
 
     :global(.ProseMirror h3) {
-        font-size: 18px;
+        font-size: 1.3em;
         font-weight: bold;
-        margin: 16px 0 8px 0;
-        color: inherit;
+        color: var(--h3-color);
+       margin: 16px 0 8px 0;
     }
+
+    :global(.ProseMirror h4) {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: var(--h4-color);
+       margin: 16px 0 8px 0;
+    }
+
+    :global(.ProseMirror h5) {
+        font-size: 1em;
+        font-weight: bold;
+        color: var(--h5-color);
+       margin: 16px 0 8px 0;
+    }
+
+    :global(.ProseMirror h6) {
+        font-size: 0.9em;
+        font-weight: bold;
+        color: var(--h6-color);
+       margin: 16px 0 8px 0;
+    }
+
 
     :global(.ProseMirror p) {
         margin: 10px 0;
