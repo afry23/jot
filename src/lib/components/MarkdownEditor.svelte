@@ -7,6 +7,7 @@
         defaultMarkdownParser,
         defaultMarkdownSerializer,
     } from "prosemirror-markdown";
+    import { buildInputRules, buildKeymap } from "prosemirror-example-setup";
     import { keymap } from "prosemirror-keymap";
     import { baseKeymap } from "prosemirror-commands";
     import { history } from "prosemirror-history";
@@ -127,8 +128,10 @@
 
             // Choose plugins based on showMenuBar prop
             const plugins = [
-                history(),
-                keymap(baseKeymap),
+                buildInputRules(schema),
+          history(),
+          keymap(buildKeymap(schema)),
+          keymap(baseKeymap),
                 keymap({
                     "Mod-b": (state, dispatch) => {
                         const { from, to } = state.selection;
@@ -534,40 +537,6 @@
     :global(.ProseMirror a:hover) {
         opacity: 0.8;
         border-bottom: 5px dotted var(--borderMedium);
-    }
-
-    /* Dropdown menu styling */
-    :global(.ProseMirror-menu-dropdown) {
-        position: relative;
-        display: inline-block;
-    }
-
-    :global(.ProseMirror-menu-dropdown-menu) {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 1000;
-        min-width: 140px;
-    }
-
-    :global(.ProseMirror-menu-dropdown-item) {
-        display: block;
-        padding: 8px 12px;
-        cursor: pointer;
-        border: none;
-        background: none;
-        text-align: left;
-        width: 100%;
-        font-size: 14px;
-        color: #495057;
-    }
-
-    :global(.ProseMirror-menu-dropdown-item:hover) {
-        background: #f8f9fa;
     }
 
     @keyframes blink {
