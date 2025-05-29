@@ -203,8 +203,9 @@ fn toggle_window(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    let tauri_app =
-        tauri::Builder::default().plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    let tauri_app = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
     tauri_app
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {

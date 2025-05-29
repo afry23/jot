@@ -2,6 +2,12 @@
 import { derived } from "svelte/store";
 import { theme } from "../stores/settings";
 
+declare global {
+    interface Window {
+        TextSelection: any;
+    }
+}
+
 // Color palette for UI elements based on the current theme
 export const uiColors = derived(theme, ($theme) => {
   // Base colors

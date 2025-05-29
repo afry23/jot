@@ -13,6 +13,7 @@
     import { history } from "prosemirror-history";
     import { dropCursor } from "prosemirror-dropcursor";
     import { gapCursor } from "prosemirror-gapcursor";
+    import { TextSelection } from "prosemirror-state";
     import { theme, fontSize } from "$lib/stores/settings";
     import { activeTab } from "$lib/stores/tabs";
     import { notes, updateNote } from "$lib/stores/notes";
@@ -23,6 +24,11 @@
         getCodeBackground,
         getCodeBorder,
     } from "$lib/utils/textFormatting";
+    import {
+        cursorPositions,
+        scrollPositions,
+    } from "$lib/stores/cursorPostionStore";
+    import { open } from "@tauri-apps/plugin-shell";
 
     // Props
     export let initialContent: string =
@@ -77,11 +83,108 @@
     const codeBackgroundColor = getCodeBackground(tabColors[$activeTab]);
     const codeBorderColor = getCodeBorder(tabColors[$activeTab]);
 
+    // Add this near other component state variables
+    let previousTab = -1;
+    let lastSavedContent = "";
+    let editorReady = false;
+
+    // Track tab changes and update editor content accordingly
+    $: if ($activeTab !== previousTab && editorReady) {
+        previousTab = $activeTab;
+        updateEditorContent();
+    }
+
+    async function openUrl(url: string) {
+        try {
+            await open(url);
+        } catch (error) {
+            console.error("Failed to open URL:", error);
+        }
+    }
+
+    // Update content when active tab changes
+    function updateEditorContent() {
+        if ($notes[$activeTab] !== undefined) {
+            currentContent = $notes[$activeTab] || "";
+            lastSavedContent = currentContent;
+
+            // Get stored cursor position for this tab or default to end of text
+            const storedCursorPosition = $cursorPositions[$activeTab];
+            const newPosition =
+                storedCursorPosition !== undefined
+                    ? storedCursorPosition
+                    : currentContent.length;
+
+            // Get stored scroll position
+            const storedScrollPosition = $scrollPositions[$activeTab];
+            const newScrollTop =
+                storedScrollPosition !== undefined ? storedScrollPosition : 0;
+
+            // Update the view with new content
+            setContent(currentContent);
+
+            // Apply cursor and scroll positions after content is set
+            setTimeout(() => {
+                if (currentView) {
+                    // Your editor might need specific handling for cursor/scroll
+                    // This is a placeholder - implement based on your editor's API
+                    applyCursorAndScrollPosition(newPosition, newScrollTop);
+                }
+            }, 50);
+        }
+    }
+
+    // Implement cursor and scroll position application
+    function applyCursorAndScrollPosition(position: number, scrollTop: number) {
+        // Implementation will depend on your editor's API
+        // For example, with ProseMirror you might need to:
+        // - Set selection to the position
+        // - Set scroll position of the container
+        if (
+            currentView &&
+            viewMode === "prosemirror" &&
+            currentView instanceof ProseMirrorView
+        ) {
+            currentView.setCursorPosition(position);
+            currentView.setScrollPosition(scrollTop);
+        } else if (
+            currentView &&
+            viewMode === "markdown" &&
+            currentView instanceof MarkdownView
+        ) {
+            currentView.setCursorPosition(position);
+            currentView.setScrollPosition(scrollTop);
+        }
+    }
+
+    // Handle content changes and save to store
+    function handleContentChange() {
+        if (!currentView || !editorReady) return;
+
+        const newContent = currentView.content;
+
+        // Only update if content actually changed
+        if (newContent !== $notes[$activeTab]) {
+            // Update the notes store
+            updateNote($activeTab, newContent);
+
+            // Save note to persistent storage if needed
+            if (newContent !== lastSavedContent) {
+                saveNote($activeTab, newContent);
+                lastSavedContent = newContent;
+            }
+        }
+    }
+
     // Abstract interface for both views
     interface EditorInterface {
         get content(): string;
         focus(): void;
         destroy(): void;
+        setCursorPosition(position: number): void;
+        setScrollPosition(scrollTop: number): void;
+        saveCursorPosition(): void;
+        saveScrollPosition(): void;
     }
 
     // Textarea-based markdown view
@@ -98,6 +201,25 @@
             // Clear target and add textarea
             this.container.innerHTML = "";
             this.container.appendChild(this.textarea);
+
+            // Add event listeners for cursor and scroll position tracking
+            this.textarea.addEventListener("click", () =>
+                this.saveCursorPosition(),
+            );
+            this.textarea.addEventListener("keyup", () =>
+                this.saveCursorPosition(),
+            );
+            this.textarea.addEventListener("select", () =>
+                this.saveCursorPosition(),
+            );
+            this.textarea.addEventListener("scroll", () =>
+                this.saveScrollPosition(),
+            );
+
+            // Add input event listener for content changes
+            this.textarea.addEventListener("input", () =>
+                handleContentChange(),
+            );
         }
 
         get content(): string {
@@ -111,6 +233,38 @@
         destroy(): void {
             if (this.container) {
                 this.container.innerHTML = "";
+            }
+        }
+
+        setCursorPosition(position: number): void {
+            if (this.textarea) {
+                this.textarea.selectionStart = this.textarea.selectionEnd =
+                    position;
+            }
+        }
+
+        setScrollPosition(scrollTop: number): void {
+            if (this.textarea) {
+                this.textarea.scrollTop = scrollTop;
+            }
+        }
+
+        saveCursorPosition(): void {
+            if (this.textarea && $activeTab !== undefined) {
+                const position = this.textarea.selectionStart;
+                cursorPositions.update((positions) => {
+                    positions[$activeTab] = position;
+                    return positions;
+                });
+            }
+        }
+
+        saveScrollPosition(): void {
+            if (this.textarea && $activeTab !== undefined) {
+                scrollPositions.update((positions) => {
+                    positions[$activeTab] = this.textarea.scrollTop;
+                    return positions;
+                });
             }
         }
     }
@@ -268,7 +422,39 @@
                 },
             });
 
-            this.container.addEventListener('click', this.handleContainerClick.bind(this));
+            this.container.addEventListener(
+                "click",
+                this.handleContainerClick.bind(this),
+            );
+
+            // Add DOM event listener for content changes
+            this.view.dom.addEventListener("blur", () => handleContentChange());
+
+            // Add transaction handler to detect content changes
+            this.view.setProps({
+                dispatchTransaction: (transaction) => {
+                    // Apply the transaction to the current state
+                    const newState = this.view.state.apply(transaction);
+
+                    // Update the editor view
+                    this.view.updateState(newState);
+
+                    // If the document changed, handle content update
+                    if (transaction.docChanged) {
+                        handleContentChange();
+                    }
+
+                    // Save cursor position when it changes
+                    if (transaction.selectionSet) {
+                        this.saveCursorPosition();
+                    }
+                },
+            });
+
+            // Add scroll listener to the container
+            this.container.addEventListener("scroll", () =>
+                this.saveScrollPosition(),
+            );
         }
 
         private handleContainerClick(e: MouseEvent): void {
@@ -282,7 +468,7 @@
                         try {
                             // For Tauri apps
                             // Import this at the top: import { open } from '@tauri-apps/api/shell';
-                            open(href);
+                            openUrl(href);
 
                             // For browser/non-Tauri environments:
                             window.open(href, "_blank", "noopener,noreferrer");
@@ -310,6 +496,51 @@
             }
             if (this.container) {
                 this.container.innerHTML = "";
+            }
+        }
+
+        setCursorPosition(position: number): void {
+            // Convert flat position to ProseMirror document position
+            // This is an approximation - ProseMirror positions work differently
+            try {
+                const resolvedPos = Math.min(
+                    position,
+                    this.view.state.doc.content.size,
+                );
+                const selection = TextSelection.create(
+                    this.view.state.doc,
+                    resolvedPos,
+                );
+                const transaction = this.view.state.tr.setSelection(selection);
+                this.view.dispatch(transaction);
+            } catch (e) {
+                console.error("Error setting cursor position:", e);
+            }
+        }
+
+        setScrollPosition(scrollTop: number): void {
+            if (this.container) {
+                this.container.scrollTop = scrollTop;
+            }
+        }
+
+        saveCursorPosition(): void {
+            if (this.view && $activeTab !== undefined) {
+                // Get the current selection's head position (cursor)
+                const position = this.view.state.selection.head;
+                cursorPositions.update((positions) => {
+                    positions[$activeTab] = position;
+                    return positions;
+                });
+            }
+        }
+
+        saveScrollPosition(): void {
+            if (this.container && $activeTab !== undefined) {
+                scrollPositions.update((positions) => {
+                    positions[$activeTab] = this.container.scrollTop;
+                    return positions;
+                });
             }
         }
     }
@@ -344,6 +575,28 @@
     // Initialize the editor when component mounts
     onMount(() => {
         switchView("prosemirror");
+        // Import TextSelection from prosemirror-state
+        import("prosemirror-state").then(({ TextSelection }) => {
+            // Make TextSelection available to methods
+            window.TextSelection = TextSelection;
+
+            // Set up initial view
+            switchView("prosemirror");
+
+            // Set editor as ready
+            editorReady = true;
+
+            // Set up initial content
+            updateEditorContent();
+        });
+
+        // Return cleanup function
+        return () => {
+            if (currentView) {
+                currentView.destroy();
+                currentView = null;
+            }
+        };
     });
 
     // Cleanup when component is destroyed
@@ -378,14 +631,6 @@
                     }
                 }, 10);
             }, 10);
-        }
-    }
-
-    // Handle radio button changes
-    function handleModeChange(event: Event) {
-        const target = event.target as HTMLInputElement;
-        if (target.checked) {
-            switchView(target.value as "markdown" | "prosemirror");
         }
     }
 
@@ -593,19 +838,20 @@
     }
 
     :global(.ProseMirror pre) {
-        background-color: #f8f9fa;
+        background-color: var(--code-background);
         padding: 16px;
-        border-radius: 6px;
+        border-radius: 2px;
         overflow-x: auto;
+        border-left: 2px solid var(--code-border);
         margin: 16px 0;
-        border: 1px solid #e9ecef;
     }
 
     :global(.ProseMirror pre code) {
+        background-color: var(--code-background);
         background: none;
         padding: 0;
         border: none;
-        color: inherit;
+        color: var(--tab-color);
     }
 
     :global(.ProseMirror a) {

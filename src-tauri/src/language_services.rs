@@ -288,7 +288,7 @@ pub fn save_language_tool_config(
 
         // If username and API key are provided, save API key securely
         if let Some(key) = &api_key {
-            if !key.is_empty() && !user.is_empty() && !key.starts_with("default"){
+            if !key.is_empty() && !user.is_empty() && !key.starts_with("default") {
                 credential_manager::store_languagetool_credential(user, key.clone())?;
             }
         }
