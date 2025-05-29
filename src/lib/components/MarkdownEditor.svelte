@@ -17,7 +17,11 @@
     import { notes, updateNote } from "$lib/stores/notes";
     import { tabColors, withOpacity } from "$lib/utils/colors";
     import { saveNote } from "$lib/utils/persistence";
-    import { getHeadingColorWithOpacity } from "$lib/utils/uiColors";
+    import { getHeadingColorWithOpacity, uiColors } from "$lib/utils/uiColors";
+    import {
+        getCodeBackground,
+        getCodeBorder,
+    } from "$lib/utils/textFormatting";
 
     // Props
     export let initialContent: string =
@@ -63,12 +67,14 @@
         },
     };
 
-    const heading1Color = getHeadingColorWithOpacity(tabColors[0], 1);
-    const heading2Color = getHeadingColorWithOpacity(tabColors[1], 2);
-    const heading3Color = getHeadingColorWithOpacity(tabColors[2], 3);
-    const heading4Color = getHeadingColorWithOpacity(tabColors[3], 4);
-    const heading5Color = getHeadingColorWithOpacity(tabColors[4], 5);
-    const heading6Color = getHeadingColorWithOpacity(tabColors[5], 6);
+    const heading1Color = getHeadingColorWithOpacity(tabColors[$activeTab], 1);
+    const heading2Color = getHeadingColorWithOpacity(tabColors[$activeTab], 2);
+    const heading3Color = getHeadingColorWithOpacity(tabColors[$activeTab], 3);
+    const heading4Color = getHeadingColorWithOpacity(tabColors[$activeTab], 4);
+    const heading5Color = getHeadingColorWithOpacity(tabColors[$activeTab], 5);
+    const heading6Color = getHeadingColorWithOpacity(tabColors[$activeTab], 6);
+    const codeBackgroundColor = getCodeBackground(tabColors[$activeTab]);
+    const codeBorderColor = getCodeBorder(tabColors[$activeTab]);
 
     // Abstract interface for both views
     interface EditorInterface {
@@ -346,8 +352,14 @@
                --h4-color: {heading4Color};
                --h5-color: {heading5Color};
                --h6-color: {heading6Color};
-            font-size: {fontSizes[$fontSize]
-            ?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
+               --borderLight: {$uiColors.borderLight};
+               --link-color: {currentTabColor};
+               --borderMedium: {$uiColors.borderMedium};
+               --code-background: {codeBackgroundColor};
+               --code-border: {codeBorderColor};
+            font-size: {fontSizes[$fontSize]?.editor}; line-height: {fontSizes[
+            $fontSize
+        ]?.lineHeight};"
     ></div>
 </div>
 
@@ -355,8 +367,8 @@
     .editor-wrapper {
         max-width: 100%;
         margin: 0 auto;
-        font-family:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            sans-serif;
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -438,30 +450,29 @@
         font-size: 1.3em;
         font-weight: bold;
         color: var(--h3-color);
-       margin: 16px 0 8px 0;
+        margin: 16px 0 8px 0;
     }
 
     :global(.ProseMirror h4) {
         font-size: 1.1em;
         font-weight: bold;
         color: var(--h4-color);
-       margin: 16px 0 8px 0;
+        margin: 16px 0 8px 0;
     }
 
     :global(.ProseMirror h5) {
         font-size: 1em;
         font-weight: bold;
         color: var(--h5-color);
-       margin: 16px 0 8px 0;
+        margin: 16px 0 8px 0;
     }
 
     :global(.ProseMirror h6) {
         font-size: 0.9em;
         font-weight: bold;
         color: var(--h6-color);
-       margin: 16px 0 8px 0;
+        margin: 16px 0 8px 0;
     }
-
 
     :global(.ProseMirror p) {
         margin: 10px 0;
@@ -489,13 +500,13 @@
     }
 
     :global(.ProseMirror code) {
-        background-color: #f1f3f4;
-        padding: 3px 6px;
-        border-radius: 4px;
+        background-color: var(--code-background);
+        padding: 0.1em 0.2em;
+        border-radius: 2px;
         font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-        font-size: 13px;
-        color: inherit;
-        border: 1px solid #e9ecef;
+        font-size: 0.9em;
+        color: var(--tab-color);
+        border-left: 2px solid var(--code-border);
     }
 
     :global(.ProseMirror pre) {
@@ -512,6 +523,17 @@
         padding: 0;
         border: none;
         color: inherit;
+    }
+
+    :global(.ProseMirror a) {
+        color: var(--link-color);
+        text-decoration: none;
+        border-bottom: 5px dotted var(--borderLight);
+    }
+
+    :global(.ProseMirror a:hover) {
+        opacity: 0.8;
+        border-bottom: 5px dotted var(--borderMedium);
     }
 
     /* Dropdown menu styling */

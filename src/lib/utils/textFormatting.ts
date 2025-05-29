@@ -447,7 +447,7 @@ function getTableHoverColor(tabColor: string): string {
   return `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`;
 }
 
-function getCodeBackground(tabColor: string): string {
+export function getCodeBackground(tabColor: string): string {
   const color = parseColor(tabColor);
   const isLight = color.r * 0.299 + color.g * 0.587 + color.b * 0.114 > 128;
 
@@ -462,7 +462,7 @@ function getCodeBackground(tabColor: string): string {
   }
 }
 
-function getCodeBorder(tabColor: string): string {
+export function getCodeBorder(tabColor: string): string {
   const color = parseColor(tabColor);
   return `rgba(${color.r}, ${color.g}, ${color.b}, 0.2)`;
 }
