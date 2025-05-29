@@ -12,6 +12,12 @@
     import { history } from "prosemirror-history";
     import { dropCursor } from "prosemirror-dropcursor";
     import { gapCursor } from "prosemirror-gapcursor";
+    import { theme, fontSize } from "$lib/stores/settings";
+    import { activeTab } from "$lib/stores/tabs";
+    import { notes, updateNote } from "$lib/stores/notes";
+    import { tabColors, withOpacity } from "$lib/utils/colors";
+    import { saveNote } from "$lib/utils/persistence";
+    import { getHeadingColorWithOpacity } from "$lib/utils/uiColors";
 
     // Props
     export let initialContent: string =
@@ -21,10 +27,48 @@
     const dispatch = createEventDispatcher();
 
     // Component state
-    let editorContainer: HTMLDivElement;
+    let editorContainer: HTMLElement;
     let viewMode: "markdown" | "prosemirror" = "prosemirror";
-    let currentView: MarkdownView | ProseMirrorView | null = null;
-    let currentContent: string = initialContent;
+    let currentView: EditorInterface | null = null;
+    let currentContent = initialContent;
+
+    // Get the appropriate color for the current tab
+    $: currentTabColor = tabColors[$activeTab];
+    $: mutedColor = withOpacity(currentTabColor, 0.5);
+    $: isCurrentTabEmpty = currentContent?.trim() === "";
+    $: displayColor = isCurrentTabEmpty ? mutedColor : currentTabColor;
+    $: shadowColor = withOpacity(currentTabColor, 0.25);
+
+    const fontSizes = {
+        small: {
+            editor: "14px",
+            h1: "1.6em",
+            h2: "1.4em",
+            h3: "1.2em",
+            lineHeight: "1.4",
+        },
+        medium: {
+            editor: "16px",
+            h1: "1.8em",
+            h2: "1.5em",
+            h3: "1.3em",
+            lineHeight: "1.5",
+        },
+        large: {
+            editor: "18px",
+            h1: "2em",
+            h2: "1.7em",
+            h3: "1.5em",
+            lineHeight: "1.6",
+        },
+    };
+
+    const heading1Color = getHeadingColorWithOpacity(tabColors[0], 1);
+    const heading2Color = getHeadingColorWithOpacity(tabColors[1], 2);
+    const heading3Color = getHeadingColorWithOpacity(tabColors[2], 3);
+    const heading4Color = getHeadingColorWithOpacity(tabColors[3], 4);
+    const heading5Color = getHeadingColorWithOpacity(tabColors[4], 5);
+    const heading6Color = getHeadingColorWithOpacity(tabColors[5], 6);
 
     // Abstract interface for both views
     interface EditorInterface {
@@ -275,9 +319,13 @@
 
     // Handle global keydown for view switching
     function handleGlobalKeyDown(event: KeyboardEvent) {
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
+        if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === "e"
+        ) {
             event.preventDefault();
-            const newMode = viewMode === 'prosemirror' ? 'markdown' : 'prosemirror';
+            const newMode =
+                viewMode === "prosemirror" ? "markdown" : "prosemirror";
             switchView(newMode);
         }
     }
@@ -286,82 +334,61 @@
 <svelte:window on:keydown={handleGlobalKeyDown} />
 
 <div class="editor-wrapper">
-
-    <div class="editor-container" bind:this={editorContainer}></div>
-
-    <div class="mode-info">
-        Current mode: <strong
-            >{viewMode === "prosemirror"
-                ? "Rich Editor (Ctrl+E to switch)"
-                : "Markdown Source (Ctrl+E switch"}</strong
-        >
-        {#if viewMode === "prosemirror"}
-            <div class="shortcuts-info">
-                <strong>Keyboard Shortcuts:</strong>
-                Ctrl/Cmd+B (Bold) • Ctrl/Cmd+I (Italic) • Ctrl/Cmd+` (Code) • Ctrl/Cmd+Z
-                (Undo) • Ctrl/Cmd+Y (Redo)
-            </div>
-        {/if}
-    </div>
+    <div
+        class="editor-container"
+        bind:this={editorContainer}
+        class:dark-theme={$theme === "dark"}
+        style="--tab-color: {displayColor}; font-size: {fontSizes[$fontSize]
+            ?.editor}; line-height: {fontSizes[$fontSize]?.lineHeight};"
+    ></div>
 </div>
 
 <style>
     .editor-wrapper {
         max-width: 100%;
         margin: 0 auto;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            sans-serif;
+        font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         display: flex;
         flex-direction: column;
         height: 100%;
+        background-color: transparent;
     }
 
     .editor-container {
-        border-radius: 6px;
         position: relative;
         flex: 1;
         display: flex;
         overflow: hidden;
+        background-color: transparent;
+        transform:
+            background-color 0.3s,
+            color 0.3s;
+        outline: none;
+        border: none;
+        resize: none;
+        padding: 20px;
+        box-sizing: border-box;
+        caret-color: var(--tab-color);
     }
 
-    .mode-info {
-        margin-top: 12px;
-        padding: 8px 12px;
-        background: #e3f2fd;
-        border: 1px solid #bbdefb;
-        border-radius: 4px;
-        font-size: 13px;
-        color: #1565c0;
+    .dark-theme {
+        color: #e0e0e0;
     }
-
-    .shortcuts-info {
-        margin-top: 6px;
-        font-size: 12px;
-        color: #1976d2;
-        line-height: 1.4;
-    }
-
     /* Markdown Textarea Styling */
     :global(.markdown-textarea) {
         width: 100%;
         height: 100%;
-        padding: 16px;
-        border: 2px solid #28a745;
-        border-radius: 6px;
+        padding: 20px;
+        border: none;
         font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-        font-size: 14px;
-        line-height: 1.6;
-        background: #f8fff9;
-        color: #333;
-        resize: vertical;
+        /*background: #f8fff9;*/
+        background-color: transparent;
+        color: inherit;
+        resize: none;
         outline: none;
         box-sizing: border-box;
-    }
-
-    :global(.markdown-textarea:focus) {
-        border-color: #20c997;
-        background: #f0fff4;
-        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+        caret-color: var(--tab-color);
     }
 
     :global(.markdown-textarea::placeholder) {
@@ -369,116 +396,26 @@
         font-style: italic;
     }
 
-    /* ProseMirror Menu Bar Styling */
-    :global(.ProseMirror-menubar) {
-        border: 2px solid #007acc;
-        border-bottom: 1px solid #007acc;
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
-        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-        padding: 8px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        min-height: 44px;
-        max-height: 44px;
-        height: 44px;
-        overflow: hidden;
-        align-items: center;
-        box-sizing: border-box;
-    }
-
-    :global(.ProseMirror-menu) {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 2px;
-        align-items: center;
-        height: 28px;
-        overflow: hidden;
-    }
-
-    :global(.ProseMirror-menuitem) {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        cursor: pointer;
-        padding: 4px 6px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #495057;
-        min-width: 24px;
-        max-width: 32px;
-        height: 24px;
-        text-align: center;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-        line-height: 1;
-    }
-
-    :global(.ProseMirror-menuitem:hover) {
-        background: #e9ecef;
-        border-color: #adb5bd;
-        transform: translateY(-1px);
-    }
-
-    :global(.ProseMirror-menuitem.ProseMirror-menu-active) {
-        background: #007acc;
-        color: white;
-        border-color: #0056b3;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
-
-    :global(.ProseMirror-menuitem.ProseMirror-menu-disabled) {
-        color: #adb5bd;
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
-
-    :global(.ProseMirror-menuitem.ProseMirror-menu-disabled:hover) {
-        background: white;
-        border-color: #dee2e6;
-        transform: none;
-    }
-
-    :global(.ProseMirror-menuseparator) {
-        border-left: 1px solid #adb5bd;
-        margin: 0 4px;
-        height: 16px;
-        flex-shrink: 0;
-    }
-
     /* ProseMirror Editor Styling */
     :global(.ProseMirror) {
-        padding: 16px;
-        border: 2px solid #007acc;
-        border-top: none;
-        border-bottom-left-radius: 6px;
-        border-bottom-right-radius: 6px;
+        padding: 20px;
         height: 100%;
         width: 100%;
         overflow-y: auto;
         outline: none;
-        font-size: 14px;
-        line-height: 1.6;
-        background: #fafbfc;
-    }
-
-    :global(.ProseMirror:focus) {
-        background: white;
-        box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.25);
+        background-color: transparent;
+        color: inherit;
+        border: none;
+        resize: none;
+        box-sizing: border-box;
     }
 
     :global(.ProseMirror h1) {
         font-size: 28px;
         font-weight: bold;
         margin: 20px 0 12px 0;
-        color: #212529;
-        border-bottom: 2px solid #e9ecef;
+        color: inherit;
+        border-bottom: 2px solid var(--tab-color, #e9ecef);
         padding-bottom: 8px;
     }
 
@@ -486,19 +423,19 @@
         font-size: 22px;
         font-weight: bold;
         margin: 18px 0 10px 0;
-        color: #343a40;
+        color: inherit;
     }
 
     :global(.ProseMirror h3) {
         font-size: 18px;
         font-weight: bold;
         margin: 16px 0 8px 0;
-        color: #495057;
+        color: inherit;
     }
 
     :global(.ProseMirror p) {
         margin: 10px 0;
-        color: #212529;
+        color: inherit;
     }
 
     :global(.ProseMirror ul, .ProseMirror ol) {
@@ -511,11 +448,11 @@
     }
 
     :global(.ProseMirror blockquote) {
-        border-left: 4px solid #007acc;
+        border-left: 4px solid var(--tab-color, #007acc);
         padding-left: 16px;
         margin: 16px 0;
         font-style: italic;
-        color: #6c757d;
+        color: inherit;
         background: #f8f9fa;
         padding: 12px 16px;
         border-radius: 0 4px 4px 0;
@@ -527,7 +464,7 @@
         border-radius: 4px;
         font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
         font-size: 13px;
-        color: #d63384;
+        color: inherit;
         border: 1px solid #e9ecef;
     }
 
@@ -544,7 +481,7 @@
         background: none;
         padding: 0;
         border: none;
-        color: #495057;
+        color: inherit;
     }
 
     /* Dropdown menu styling */
@@ -579,5 +516,15 @@
 
     :global(.ProseMirror-menu-dropdown-item:hover) {
         background: #f8f9fa;
+    }
+
+    @keyframes blink {
+        0%,
+        100% {
+            opacity: 0.7;
+        }
+        50% {
+            opacity: 0;
+        }
     }
 </style>
