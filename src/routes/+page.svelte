@@ -16,6 +16,8 @@
   import { Window } from "@tauri-apps/api/window";
   import { invoke } from "@tauri-apps/api/core";
 
+  let loading = true;
+
   // Load notes and settings on mount
   onMount(() => {
     // Load application settings and notes asynchronously
@@ -35,6 +37,9 @@
         initializeHistory($notes);
       } catch (error) {
         logger.error("Failed to load application data:", error);
+      } finally {
+        loading = false;
+        logger.info("Application data loaded successfully");
       }
     };
     loadAppData();
@@ -62,10 +67,12 @@
       if (event.event) {
         // Focus the editor when the window becomes visible or gets focus
         setTimeout(() => {
-          const editor = document.querySelector('.plain-text-editor') as HTMLTextAreaElement;
+          const editor = document.querySelector(
+            ".plain-text-editor",
+          ) as HTMLTextAreaElement;
           if (editor) {
             editor.focus();
-            
+
             // Position cursor at the end of text if needed
             if (editor.value) {
               editor.selectionStart = editor.selectionEnd = editor.value.length;
@@ -102,7 +109,13 @@
 >
   <Header />
   <main>
-    <EditorContainer />
+    {#if loading}
+      <div class="loading-screen">
+        <p>Loading...</p>
+      </div>
+    {:else}
+      <EditorContainer />
+    {/if}
   </main>
   <StatusBar />
 </div>
@@ -165,5 +178,12 @@
     overflow: hidden;
     padding: 0;
     margin: 0;
+  }
+
+  .loading-screen {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 1.2em;
+    color: var(--text-color);
   }
 </style>

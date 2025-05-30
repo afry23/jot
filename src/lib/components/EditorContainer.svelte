@@ -13,7 +13,7 @@
   $: currentTabColor = isCurrentTabEmpty
     ? emptyTabColor
     : tabColors[$activeTab];
-  
+
   // This function would handle content updates from MarkdownEditor.
   // MarkdownEditor.svelte needs to be modified to dispatch a 'change' event.
   function handleMarkdownEditorChange(event: CustomEvent<string>) {
@@ -27,10 +27,10 @@
 <div class="editor-wrapper" style="--tab-color: {currentTabColor};">
   <div class="content-container">
     {#key $activeTab}
-    <MarkdownEditor
-      initialContent={$notes[$activeTab] || ""}
-      on:change={handleMarkdownEditorChange}
-    />
+      <MarkdownEditor
+        initialContent={$notes[$activeTab] || ""}
+        on:change={handleMarkdownEditorChange}
+      />
     {/key}
   </div>
 </div>

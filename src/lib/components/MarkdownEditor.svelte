@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, createEventDispatcher } from "svelte";
+    import { onMount, onDestroy, createEventDispatcher, tick } from "svelte";
     import { EditorView } from "prosemirror-view";
     import { EditorState } from "prosemirror-state";
     import {
@@ -30,6 +30,7 @@
         scrollPositions,
     } from "$lib/stores/cursorPostionStore";
     import { open } from "@tauri-apps/plugin-shell";
+    import { logger } from "$lib/utils/logger";
 
     // Props
     export let initialContent: string =
@@ -107,6 +108,9 @@
     function updateEditorContent() {
         if ($notes[$activeTab] !== undefined) {
             currentContent = $notes[$activeTab] || "";
+            logger.info(
+                `Updating editor content for tab ${$activeTab}: ${currentContent}`,
+            );
             lastSavedContent = currentContent;
 
             // Get stored cursor position for this tab or default to end of text
@@ -707,21 +711,11 @@
 
     // Initialize the editor when component mounts
     onMount(() => {
+        // Set up initial view
         switchView("prosemirror");
-        // Import TextSelection from prosemirror-state
-        import("prosemirror-state").then(({ TextSelection }) => {
-            // Make TextSelection available to methods
-            window.TextSelection = TextSelection;
 
-            // Set up initial view
-            switchView("prosemirror");
-
-            // Set editor as ready
-            editorReady = true;
-
-            // Set up initial content
-            updateEditorContent();
-        });
+        // Set editor as ready
+        editorReady = true;
 
         // Return cleanup function
         return () => {
