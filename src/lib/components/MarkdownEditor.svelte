@@ -19,6 +19,7 @@
     import { notes, updateNote } from "$lib/stores/notes";
     import { tabColors, withOpacity } from "$lib/utils/colors";
     import { saveNote } from "$lib/utils/persistence";
+    import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
     import { getHeadingColorWithOpacity, uiColors } from "$lib/utils/uiColors";
     import {
         getCodeBackground,
@@ -176,6 +177,27 @@
         }
     }
 
+    function handleUndo() {
+        console.log("Handling undo for tab:", $activeTab);
+        const previousContent = undo($activeTab);
+        if (previousContent !== null) {
+            notes.update((state) => {
+                state[$activeTab] = previousContent;
+                return state;
+            });
+        }
+    }
+
+    function handleRedo() {
+        const nextContent = redo($activeTab);
+        if (nextContent !== null) {
+            notes.update((state) => {
+                state[$activeTab] = nextContent;
+                return state;
+            });
+        }
+    }
+
     // Abstract interface for both views
     interface EditorInterface {
         get content(): string;
@@ -219,6 +241,11 @@
             // Add input event listener for content changes
             this.textarea.addEventListener("input", () =>
                 handleContentChange(),
+            );
+
+            this.textarea.addEventListener(
+                "keydown",
+                this.handleKeyDown.bind(this),
             );
         }
 
@@ -266,6 +293,112 @@
                     return positions;
                 });
             }
+        }
+
+        handleKeyDown(event: {
+            metaKey: any;
+            ctrlKey: any;
+            key: string;
+            preventDefault: () => void;
+        }) {
+            // Check for Mod key (Cmd on Mac, Ctrl on Windows)
+            const isMod = event.metaKey || event.ctrlKey;
+
+            if (isMod && event.key === "b") {
+                // Bold
+                event.preventDefault();
+                this.wrapSelection("**", "**");
+                return true;
+            } else if (isMod && event.key === "i") {
+                // Italic
+                event.preventDefault();
+                this.wrapSelection("*", "*");
+                return true;
+            } else if (isMod && event.key === "`") {
+                // Code
+                event.preventDefault();
+                this.wrapSelection("`", "`");
+                return true;
+            } else if (isMod && event.key === "t") {
+                // Timestamp
+                event.preventDefault();
+                this.insertTimestamp();
+                return true;
+            } else if (isMod && event.key === "z") {
+                // Undo
+                event.preventDefault();
+                handleUndo();
+                return true;
+            } else if (isMod && event.key === "y") {
+                // Redo
+                event.preventDefault();
+                handleRedo();
+                return true;
+            }
+            return false;
+        }
+
+        wrapSelection(before: string | any[], after: string | any[]) {
+            const { selectionStart, selectionEnd, value } = this.textarea;
+            const selectedText = value.substring(selectionStart, selectionEnd);
+            const newText = before + selectedText + after;
+
+            // Replace the selected text with the wrapped version
+            this.textarea.setRangeText(
+                newText,
+                selectionStart,
+                selectionEnd,
+                "end",
+            );
+
+            // Set cursor position based on whether text was selected
+            if (selectionStart === selectionEnd) {
+                // If no selection, place cursor between the markers
+                this.textarea.selectionStart = this.textarea.selectionEnd =
+                    selectionStart + before.length;
+            } else {
+                // If text was selected, place cursor after the wrapped text
+                this.textarea.selectionStart = this.textarea.selectionEnd =
+                    selectionEnd +
+                    before.length +
+                    after.length -
+                    selectedText.length;
+            }
+
+            // Trigger content change
+            handleContentChange();
+
+            // Update cursor position in store
+            this.saveCursorPosition();
+        }
+
+        insertTimestamp() {
+            const now = new Date();
+            const formattedDate = now.toLocaleString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+
+            const start = this.textarea.selectionStart;
+            const end = this.textarea.selectionEnd;
+
+            // Insert timestamp at cursor position
+            const formattedTimestamp = `**${formattedDate}** `;
+            const currentContent = $notes[$activeTab] || "";
+            const newContent =
+                currentContent.substring(0, start) +
+                formattedTimestamp +
+                currentContent.substring(end);
+
+            this.textarea.value = newContent;
+
+            // Move cursor after the inserted timestamp
+            this.textarea.selectionStart = this.textarea.selectionEnd =
+                start + formattedTimestamp.length;
         }
     }
 
@@ -676,7 +809,7 @@
 
 <style>
     .editor-wrapper {
-        max-width: 100%;
+        width: 100%;
         margin: 0 auto;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             sans-serif;
@@ -698,7 +831,7 @@
         outline: none;
         border: none;
         resize: none;
-        padding: 20px;
+        padding: 2px;
         box-sizing: border-box;
         caret-color: var(--tab-color);
     }
