@@ -386,8 +386,38 @@
                 event.preventDefault();
                 handleRedo();
                 return true;
+            } else if (isMod && event.key === "k") {
+                // Link
+                event.preventDefault();
+                // Add a template for link insertion in the format [text](url)
+                this.insertLinkTemplate();
+                return true;
             }
             return false;
+        }
+        insertLinkTemplate() {
+            const { selectionStart, selectionEnd, value } = this.textarea;
+            const selectedText =
+                value.substring(selectionStart, selectionEnd) || "link text";
+            const template = `[${selectedText}](url)`;
+
+            // Replace the selected text with the link template
+            this.textarea.setRangeText(
+                template,
+                selectionStart,
+                selectionEnd,
+                "end",
+            );
+
+            // Place cursor inside the url part for convenience
+            const urlStart = selectionStart + template.indexOf("](url)") + 2;
+            const urlEnd = urlStart + 3; // length of "url"
+            this.textarea.selectionStart = urlStart;
+            this.textarea.selectionEnd = urlEnd;
+
+            // Trigger content change and update cursor position
+            handleContentChange();
+            this.saveCursorPosition();
         }
 
         wrapSelection(before: string | any[], after: string | any[]) {
