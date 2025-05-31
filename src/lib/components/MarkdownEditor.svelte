@@ -108,9 +108,6 @@
     function updateEditorContent() {
         if ($notes[$activeTab] !== undefined) {
             currentContent = $notes[$activeTab] || "";
-            logger.info(
-                `Updating editor content for tab ${$activeTab}: ${currentContent}`,
-            );
             lastSavedContent = currentContent;
 
             // Get stored cursor position for this tab or default to end of text
