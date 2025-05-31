@@ -183,7 +183,7 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
         } = event
         {
             let app = tray.app_handle();
-            toggle_window(app);
+            toggle_window(&app.app_handle());
         }
     });
 
@@ -203,12 +203,47 @@ fn toggle_window(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    let tauri_app = tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
-    tauri_app
+    let _tauri_app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            #[cfg(debug_assertions)]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                    window.eval("setTimeout(() => { console.log('DevTools opened - Console ready!'); }, 100);").ok();
+                }
+            }
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+
+                let ctrl_j_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyJ);
+                let app_handle = app.handle();
+                app_handle.plugin(
+                    tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler({
+                        let app_handle = app_handle.clone();
+                        move |_app, shortcut, event| {
+                            println!("{:?}", shortcut);
+                            if shortcut == &ctrl_j_shortcut {
+                                match event.state() {
+                                    ShortcutState::Pressed => {
+                                        println!("Ctrl-J Pressed!");
+                                    }
+                                    ShortcutState::Released => {
+                                        println!("Ctrl-J Released!");
+                                        toggle_window(&app_handle);
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    .build(),
+                )?;
+
+                app_handle.global_shortcut().register(ctrl_j_shortcut)?;
+            }
             logging::init_logger(app.app_handle())?;
             info!("Jot application starting up");
             configure_tray_menu(app).unwrap();
