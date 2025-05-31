@@ -965,7 +965,8 @@
         height: 100%;
         padding: 20px;
         border: none;
-        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono",
+            Menlo, monospace;
         /*background: #f8fff9;*/
         background-color: transparent;
         color: inherit;
