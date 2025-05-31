@@ -227,14 +227,8 @@ pub fn run() {
                         move |_app, shortcut, event| {
                             println!("{:?}", shortcut);
                             if shortcut == &ctrl_j_shortcut {
-                                match event.state() {
-                                    ShortcutState::Pressed => {
-                                        println!("Ctrl-J Pressed!");
-                                    }
-                                    ShortcutState::Released => {
-                                        println!("Ctrl-J Released!");
-                                        toggle_window(&app_handle);
-                                    }
+                                if event.state() == ShortcutState::Released {
+                                   toggle_window(&app_handle);
                                 }
                             }
                         }
