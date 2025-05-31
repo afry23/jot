@@ -218,14 +218,13 @@ pub fn run() {
             {
                 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
-                let ctrl_j_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyJ);
+                let ctrl_j_shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyJ);
                 let app_handle = app.handle();
                 app_handle.plugin(
                     tauri_plugin_global_shortcut::Builder::new()
                     .with_handler({
                         let app_handle = app_handle.clone();
                         move |_app, shortcut, event| {
-                            println!("{:?}", shortcut);
                             if shortcut == &ctrl_j_shortcut {
                                 if event.state() == ShortcutState::Released {
                                    toggle_window(&app_handle);

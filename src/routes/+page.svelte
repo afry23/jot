@@ -14,7 +14,7 @@
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { logger } from "$lib/utils/logger";
   import { Window } from "@tauri-apps/api/window";
-  import { invoke } from "@tauri-apps/api/core";
+  import "prosemirror-view/style/prosemirror.css";
 
   let loading = true;
 
