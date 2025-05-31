@@ -31,6 +31,13 @@
     } from "$lib/stores/cursorPostionStore";
     import { open } from "@tauri-apps/plugin-shell";
     import { logger } from "$lib/utils/logger";
+    import LinkModal from "./LinkModal.svelte";
+
+    let showLinkModal = false;
+    let linkModalInitialHref = "";
+    let linkModalInitialText = "";
+    let linkModalSelection: { from: number; to: number } | null = null;
+    let proseMirrorViewRef: ProseMirrorView | null = null;
 
     // Props
     export let initialContent: string =
@@ -102,6 +109,50 @@
         } catch (error) {
             console.error("Failed to open URL:", error);
         }
+    }
+
+    function handleLinkModalSubmit(
+        event: CustomEvent<{ href: string; text: string }>,
+    ) {
+        showLinkModal = false;
+        if (!linkModalSelection || !proseMirrorViewRef) return;
+        const { href, text } = event.detail;
+        const { from, to } = linkModalSelection;
+        const view = proseMirrorViewRef.view;
+        const linkType = schema.marks.link;
+
+        let tr = view.state.tr;
+        // If selection is empty, insert the text
+        if (from === to) {
+            tr = tr.insertText(text, from, to);
+            tr = tr.addMark(
+                from,
+                from + text.length,
+                linkType.create({ href }),
+            );
+            tr = tr.setSelection(
+                TextSelection.create(tr.doc, from, from + text.length),
+            );
+        } else {
+            // Replace selected text with new text and link
+            tr = tr.insertText(text, from, to);
+            tr = tr.addMark(
+                from,
+                from + text.length,
+                linkType.create({ href }),
+            );
+            tr = tr.setSelection(
+                TextSelection.create(tr.doc, from, from + text.length),
+            );
+        }
+        view.dispatch(tr);
+        proseMirrorViewRef = null;
+        linkModalSelection = null;
+    }
+    function handleLinkModalCancel() {
+        showLinkModal = false;
+        proseMirrorViewRef = null;
+        linkModalSelection = null;
     }
 
     // Update content when active tab changes
@@ -490,6 +541,47 @@
                         }
                         return true;
                     },
+                    "Mod-k": (state, dispatch, view) => {
+                        if (!view) return false;
+                        const { from, to, empty } = state.selection;
+                        let initialText = "";
+                        if (!empty) {
+                            initialText = state.doc.textBetween(from, to, " ");
+                        }
+                        // Save selection and show modal
+                        linkModalSelection = { from, to };
+                        linkModalInitialHref = "";
+                        linkModalInitialText = initialText || "link text";
+                        if (currentView instanceof ProseMirrorView) {
+                            proseMirrorViewRef = currentView;
+                        } else {
+                            proseMirrorViewRef = null;
+                        }
+                        showLinkModal = true;
+                        return true;
+                    },
+                    "Mod-t": (state, dispatch) => {
+                        if (!dispatch) return false;
+                        const now = new Date();
+                        const formattedDate = now.toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                        });
+                        // Insert as bold markdown (like MarkdownView)
+                        const timestamp = `**${formattedDate}** `;
+                        dispatch(
+                            state.tr.insertText(
+                                timestamp,
+                                state.selection.from,
+                                state.selection.to,
+                            ),
+                        );
+                        return true;
+                    },
                     "Mod-z": (state, dispatch) => {
                         return require("prosemirror-history").undo(
                             state,
@@ -773,7 +865,14 @@
 </script>
 
 <svelte:window on:keydown={handleGlobalKeyDown} />
-
+{#if showLinkModal}
+    <LinkModal
+        initialHref={linkModalInitialHref}
+        initialText={linkModalInitialText}
+        on:submit={handleLinkModalSubmit}
+        on:cancel={handleLinkModalCancel}
+    />
+{/if}
 <div class="editor-wrapper">
     <div
         class="editor-container"
