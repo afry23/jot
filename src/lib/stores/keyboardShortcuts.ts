@@ -29,13 +29,6 @@ async function toggleWindow() {
 
 // Function to setup global keyboard shortcuts
 export async function setupKeyboardShortcuts() {
-
-  await register('CommandOrControl+Shift+J', async (event) => {
-    if (event.state === "Pressed") {
-      logger.info('Shortcut triggered');
-      await toggleWindow();
-    }
-  });
   // Only set up shortcuts once
   if (typeof window === "undefined") return;
 
