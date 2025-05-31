@@ -422,29 +422,50 @@
 
         wrapSelection(before: string | any[], after: string | any[]) {
             const { selectionStart, selectionEnd, value } = this.textarea;
-            const selectedText = value.substring(selectionStart, selectionEnd);
-            const newText = before + selectedText + after;
+            let selectedText = value.substring(selectionStart, selectionEnd);
 
-            // Replace the selected text with the wrapped version
-            this.textarea.setRangeText(
-                newText,
-                selectionStart,
-                selectionEnd,
-                "end",
-            );
+            // Check if selection is already wrapped
+            const hasBefore =
+                value.substring(
+                    selectionStart - before.length,
+                    selectionStart,
+                ) === before;
+            const hasAfter =
+                value.substring(selectionEnd, selectionEnd + after.length) ===
+                after;
 
-            // Set cursor position based on whether text was selected
-            if (selectionStart === selectionEnd) {
-                // If no selection, place cursor between the markers
-                this.textarea.selectionStart = this.textarea.selectionEnd =
-                    selectionStart + before.length;
+            if (hasBefore && hasAfter) {
+                // Remove formatting
+                const newStart = selectionStart - before.length;
+                const newEnd = selectionEnd - before.length;
+                const newValue =
+                    value.substring(0, newStart) +
+                    selectedText +
+                    value.substring(selectionEnd + after.length);
+
+                this.textarea.value = newValue;
+                this.textarea.selectionStart = newStart;
+                this.textarea.selectionEnd = newEnd;
             } else {
-                // If text was selected, place cursor after the wrapped text
-                this.textarea.selectionStart = this.textarea.selectionEnd =
-                    selectionEnd +
-                    before.length +
-                    after.length -
-                    selectedText.length;
+                // Add formatting
+                const newText = before + selectedText + after;
+                this.textarea.setRangeText(
+                    newText,
+                    selectionStart,
+                    selectionEnd,
+                    "end",
+                );
+
+                if (selectionStart === selectionEnd) {
+                    // No selection: place cursor between markers
+                    this.textarea.selectionStart = this.textarea.selectionEnd =
+                        selectionStart + before.length;
+                } else {
+                    // Selection: select the wrapped text
+                    this.textarea.selectionStart =
+                        selectionStart + before.length;
+                    this.textarea.selectionEnd = selectionEnd + before.length;
+                }
             }
 
             // Trigger content change
