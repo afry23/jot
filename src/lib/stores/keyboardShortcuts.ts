@@ -6,6 +6,7 @@ import { redo, undo } from "./history";
 import { notes } from "./notes";
 import { register } from '@tauri-apps/plugin-global-shortcut';
 import { Window } from "@tauri-apps/api/window";
+import { logger } from "$lib/utils/logger";
 
 
 async function toggleWindow() {
@@ -31,7 +32,7 @@ export async function setupKeyboardShortcuts() {
 
   await register('CommandOrControl+Shift+J', async (event) => {
     if (event.state === "Pressed") {
-      console.log('Shortcut triggered');
+      logger.info('Shortcut triggered');
       await toggleWindow();
     }
   });
@@ -43,13 +44,6 @@ export async function setupKeyboardShortcuts() {
   window.addEventListener("keydown", handleKeydown);
   // Handle keyboard shortcuts
   function handleKeydown(event: KeyboardEvent) {
-    // Skip if inside input/textarea for certain shortcuts
-    const target = event.target as HTMLElement;
-    const isEditing =
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.getAttribute("contenteditable") === "true";
-
     // Ctrl+1-7: Change tab (works even in textarea)
     if (event.ctrlKey && event.key >= "1" && event.key <= "7") {
       event.preventDefault();
