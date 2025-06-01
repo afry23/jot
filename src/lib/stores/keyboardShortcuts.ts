@@ -61,37 +61,37 @@ export async function setupKeyboardShortcuts() {
       return;
     }
 
-    if (event.ctrlKey && !event.shiftKey && event.key === 'z') {
-      event.preventDefault();
-      const currentTab = get(activeTab);
-      const previousContent = undo(currentTab);
+    //if (event.ctrlKey && !event.shiftKey && event.key === 'z') {
+    //  event.preventDefault();
+    //  const currentTab = get(activeTab);
+    //  const previousContent = undo(currentTab);
 
-      if (previousContent !== null) {
-        // Use a different function to update notes to avoid circular updates
-        notes.update((state) => {
-          state[currentTab] = previousContent;
-          return state;
-        });
-      }
-      return;
-    }
+    //  if (previousContent !== null) {
+    // Use a different function to update notes to avoid circular updates
+    //   notes.update((state) => {
+    //      state[currentTab] = previousContent;
+    // return state;
+    // });
+    // }
+    // return;
+    // }
 
     // Ctrl+Shift+Z or Ctrl+Y: Redo
-    if ((event.ctrlKey && event.shiftKey && event.key === 'z') ||
-      (event.ctrlKey && event.key === 'y')) {
-      event.preventDefault();
-      const currentTab = get(activeTab);
-      const nextContent = redo(currentTab);
+    // if ((event.ctrlKey && event.shiftKey && event.key === 'z') ||
+    // (event.ctrlKey && event.key === 'y')) {
+    // event.preventDefault();
+    // const currentTab = get(activeTab);
+    // const nextContent = redo(currentTab);
 
-      if (nextContent !== null) {
-        // Use a different function to update notes to avoid circular updates
-        notes.update((state) => {
-          state[currentTab] = nextContent;
-          return state;
-        });
-      }
-      return;
-    }
+    // if (nextContent !== null) {
+    // Use a different function to update notes to avoid circular updates
+    // notes.update((state) => {
+    // state[currentTab] = nextContent;
+    // return state;
+    // });
+    // }
+    // return;
+    // }
   }
 
   // Clean up on teardown

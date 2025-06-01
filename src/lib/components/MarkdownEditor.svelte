@@ -237,16 +237,29 @@
                 state[$activeTab] = previousContent;
                 return state;
             });
+            if (
+                viewMode === "markdown" &&
+                currentView instanceof MarkdownView
+            ) {
+                currentView.setContent(previousContent);
+            }
         }
     }
 
     function handleRedo() {
+        console.log("Handling redo for tab:", $activeTab);
         const nextContent = redo($activeTab);
         if (nextContent !== null) {
             notes.update((state) => {
                 state[$activeTab] = nextContent;
                 return state;
             });
+            if (
+                viewMode === "markdown" &&
+                currentView instanceof MarkdownView
+            ) {
+                currentView.setContent(nextContent);
+            }
         }
     }
 
@@ -303,6 +316,10 @@
 
         get content(): string {
             return this.textarea.value;
+        }
+
+        setContent(content: string): void {
+            this.textarea.value = content;
         }
 
         focus(): void {
