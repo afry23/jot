@@ -42,7 +42,7 @@ export const lastSavedContent = writable<Record<number, string>>({
 // Add content to history
 export function pushToHistory(tabIndex: number, content: string): void {
   const currentLastSaved = get(lastSavedContent)[tabIndex];
-  
+
   // Only save if content has changed
   if (currentLastSaved !== content) {
     undoHistory.update((state) => {
@@ -50,21 +50,21 @@ export function pushToHistory(tabIndex: number, content: string): void {
       if (state[tabIndex].length === 0 || state[tabIndex][state[tabIndex].length - 1] !== currentLastSaved) {
         state[tabIndex].push(currentLastSaved);
       }
-      
+
       // Limit history size
       if (state[tabIndex].length > MAX_HISTORY_SIZE) {
         state[tabIndex] = state[tabIndex].slice(-MAX_HISTORY_SIZE);
       }
-      
+
       return state;
     });
-    
+
     // Clear redo history for this tab since we have a new change
     redoHistory.update((state) => {
       state[tabIndex] = [];
       return state;
     });
-    
+
     // Update last saved content
     lastSavedContent.update((state) => {
       state[tabIndex] = content;
@@ -74,23 +74,23 @@ export function pushToHistory(tabIndex: number, content: string): void {
 }
 
 // Undo action
-export function undo(tabIndex: number): string | null {
+export function myundo(tabIndex: number): string | null {
   let result = null;
-  
+
   undoHistory.update((undoState) => {
     if (undoState[tabIndex].length > 0) {
       // Get the last content from history
       const previousContent = undoState[tabIndex].pop();
-      
+
       // Add current content to redo stack
       redoHistory.update((redoState) => {
         redoState[tabIndex].push(get(lastSavedContent)[tabIndex]);
         return redoState;
       });
-      
+
       // Update result to return
       result = previousContent;
-      
+
       // Update last saved content
       lastSavedContent.update((state) => {
         if (previousContent !== undefined) {
@@ -99,31 +99,31 @@ export function undo(tabIndex: number): string | null {
         return state;
       });
     }
-    
+
     return undoState;
   });
-  
+
   return result;
 }
 
 // Redo action
-export function redo(tabIndex: number): string | null {
+export function myredo(tabIndex: number): string | null {
   let result = null;
-  
+
   redoHistory.update((redoState) => {
     if (redoState[tabIndex].length > 0) {
       // Get the last content from redo history
       const nextContent = redoState[tabIndex].pop();
-      
+
       // Add current content to undo stack
       undoHistory.update((undoState) => {
         undoState[tabIndex].push(get(lastSavedContent)[tabIndex]);
         return undoState;
       });
-      
+
       // Update result to return
       result = nextContent;
-      
+
       // Update last saved content
       lastSavedContent.update((state) => {
         if (nextContent !== undefined) {
@@ -132,10 +132,10 @@ export function redo(tabIndex: number): string | null {
         return state;
       });
     }
-    
+
     return redoState;
   });
-  
+
   return result;
 }
 
@@ -145,7 +145,7 @@ export function clearHistory(tabIndex: number): void {
     state[tabIndex] = [];
     return state;
   });
-  
+
   redoHistory.update((state) => {
     state[tabIndex] = [];
     return state;
@@ -154,5 +154,5 @@ export function clearHistory(tabIndex: number): void {
 
 // Initialize history with current note content
 export function initializeHistory(content: Record<number, string>): void {
-  lastSavedContent.set({...content});
+  lastSavedContent.set({ ...content });
 }

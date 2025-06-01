@@ -2,7 +2,7 @@ import { activeTab, setActiveTab } from "./tabs";
 import { toggleViewMode } from "./viewMode";
 import { toggleTheme } from "./settings";
 import { get } from "svelte/store";
-import { redo, undo } from "./history";
+import { myredo, myundo } from "./history";
 import { notes } from "./notes";
 import { register } from '@tauri-apps/plugin-global-shortcut';
 import { Window } from "@tauri-apps/api/window";

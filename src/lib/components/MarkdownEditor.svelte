@@ -10,7 +10,6 @@
     import { buildInputRules, buildKeymap } from "prosemirror-example-setup";
     import { keymap } from "prosemirror-keymap";
     import { baseKeymap } from "prosemirror-commands";
-    import { history } from "prosemirror-history";
     import { dropCursor } from "prosemirror-dropcursor";
     import { gapCursor } from "prosemirror-gapcursor";
     import { TextSelection } from "prosemirror-state";
@@ -19,8 +18,15 @@
     import { notes, updateNote } from "$lib/stores/notes";
     import { tabColors, withOpacity } from "$lib/utils/colors";
     import { saveNote } from "$lib/utils/persistence";
-    import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
+    import {
+        undoHistory,
+        redoHistory,
+        myundo,
+        myredo,
+    } from "$lib/stores/history";
     import { getHeadingColorWithOpacity, uiColors } from "$lib/utils/uiColors";
+    import { history } from "prosemirror-history";
+    import { undo, redo } from "prosemirror-history";
     import {
         getCodeBackground,
         getCodeBorder,
@@ -231,7 +237,7 @@
 
     function handleUndo() {
         console.log("Handling undo for tab:", $activeTab);
-        const previousContent = undo($activeTab);
+        const previousContent = myundo($activeTab);
         if (previousContent !== null) {
             notes.update((state) => {
                 state[$activeTab] = previousContent;
@@ -248,7 +254,7 @@
 
     function handleRedo() {
         console.log("Handling redo for tab:", $activeTab);
-        const nextContent = redo($activeTab);
+        const nextContent = myredo($activeTab);
         if (nextContent !== null) {
             notes.update((state) => {
                 state[$activeTab] = nextContent;
@@ -651,16 +657,10 @@
                         return true;
                     },
                     "Mod-z": (state, dispatch) => {
-                        return require("prosemirror-history").undo(
-                            state,
-                            dispatch,
-                        );
+                        return undo(state, dispatch);
                     },
                     "Mod-y": (state, dispatch) => {
-                        return require("prosemirror-history").redo(
-                            state,
-                            dispatch,
-                        );
+                        return redo(state, dispatch);
                     },
                     "Mod-Shift-z": (state, dispatch) => {
                         return require("prosemirror-history").redo(
