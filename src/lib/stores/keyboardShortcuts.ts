@@ -2,10 +2,11 @@ import { activeTab, setActiveTab } from "./tabs";
 import { toggleViewMode } from "./viewMode";
 import { toggleTheme } from "./settings";
 import { get } from "svelte/store";
-import { redo, undo } from "./history";
+import { myredo, myundo } from "./history";
 import { notes } from "./notes";
 import { register } from '@tauri-apps/plugin-global-shortcut';
 import { Window } from "@tauri-apps/api/window";
+import { logger } from "$lib/utils/logger";
 
 
 async function toggleWindow() {
@@ -28,13 +29,6 @@ async function toggleWindow() {
 
 // Function to setup global keyboard shortcuts
 export async function setupKeyboardShortcuts() {
-
-  await register('CommandOrControl+Shift+J', async (event) => {
-    if (event.state === "Pressed") {
-      console.log('Shortcut triggered');
-      await toggleWindow();
-    }
-  });
   // Only set up shortcuts once
   if (typeof window === "undefined") return;
 
@@ -43,13 +37,6 @@ export async function setupKeyboardShortcuts() {
   window.addEventListener("keydown", handleKeydown);
   // Handle keyboard shortcuts
   function handleKeydown(event: KeyboardEvent) {
-    // Skip if inside input/textarea for certain shortcuts
-    const target = event.target as HTMLElement;
-    const isEditing =
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.getAttribute("contenteditable") === "true";
-
     // Ctrl+1-7: Change tab (works even in textarea)
     if (event.ctrlKey && event.key >= "1" && event.key <= "7") {
       event.preventDefault();
@@ -74,37 +61,37 @@ export async function setupKeyboardShortcuts() {
       return;
     }
 
-    if (event.ctrlKey && !event.shiftKey && event.key === 'z') {
-      event.preventDefault();
-      const currentTab = get(activeTab);
-      const previousContent = undo(currentTab);
+    //if (event.ctrlKey && !event.shiftKey && event.key === 'z') {
+    //  event.preventDefault();
+    //  const currentTab = get(activeTab);
+    //  const previousContent = undo(currentTab);
 
-      if (previousContent !== null) {
-        // Use a different function to update notes to avoid circular updates
-        notes.update((state) => {
-          state[currentTab] = previousContent;
-          return state;
-        });
-      }
-      return;
-    }
+    //  if (previousContent !== null) {
+    // Use a different function to update notes to avoid circular updates
+    //   notes.update((state) => {
+    //      state[currentTab] = previousContent;
+    // return state;
+    // });
+    // }
+    // return;
+    // }
 
     // Ctrl+Shift+Z or Ctrl+Y: Redo
-    if ((event.ctrlKey && event.shiftKey && event.key === 'z') ||
-      (event.ctrlKey && event.key === 'y')) {
-      event.preventDefault();
-      const currentTab = get(activeTab);
-      const nextContent = redo(currentTab);
+    // if ((event.ctrlKey && event.shiftKey && event.key === 'z') ||
+    // (event.ctrlKey && event.key === 'y')) {
+    // event.preventDefault();
+    // const currentTab = get(activeTab);
+    // const nextContent = redo(currentTab);
 
-      if (nextContent !== null) {
-        // Use a different function to update notes to avoid circular updates
-        notes.update((state) => {
-          state[currentTab] = nextContent;
-          return state;
-        });
-      }
-      return;
-    }
+    // if (nextContent !== null) {
+    // Use a different function to update notes to avoid circular updates
+    // notes.update((state) => {
+    // state[currentTab] = nextContent;
+    // return state;
+    // });
+    // }
+    // return;
+    // }
   }
 
   // Clean up on teardown

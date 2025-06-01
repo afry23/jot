@@ -6,9 +6,17 @@
   import { viewMode } from "$lib/stores/viewMode";
   import { formatMarkdown } from "$lib/utils/textFormatting";
   import { tabColors, withOpacity } from "$lib/utils/colors";
-  import { undoHistory, redoHistory, undo, redo } from "$lib/stores/history";
+  import {
+    undoHistory,
+    redoHistory,
+    myundo,
+    myredo,
+  } from "$lib/stores/history";
   import { saveNote } from "$lib/utils/persistence";
-    import { cursorPositions, scrollPositions } from "$lib/stores/cursorPostionStore";
+  import {
+    cursorPositions,
+    scrollPositions,
+  } from "$lib/stores/cursorPostionStore";
 
   // Reference to editor elements
   let plainTextEditor: HTMLTextAreaElement;
@@ -572,7 +580,7 @@
   }
 
   function handleUndo() {
-    const previousContent = undo($activeTab);
+    const previousContent = myundo($activeTab);
     if (previousContent !== null) {
       notes.update((state) => {
         state[$activeTab] = previousContent;
@@ -582,7 +590,7 @@
   }
 
   function handleRedo() {
-    const nextContent = redo($activeTab);
+    const nextContent = myredo($activeTab);
     if (nextContent !== null) {
       notes.update((state) => {
         state[$activeTab] = nextContent;

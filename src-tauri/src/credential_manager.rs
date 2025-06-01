@@ -114,7 +114,7 @@ pub fn get_languagetool_credential(username: String) -> Result<String, String> {
 pub fn has_languagetool_credential(username: String) -> bool {
     match get_credential(LANGUAGETOOL_SERVICE, &username) {
         Ok(_) => true,
-        Err(_) => false
+        Err(_) => false,
     }
 }
 
@@ -137,7 +137,7 @@ pub fn has_deepl_credential(app_handle: AppHandle) -> bool {
     let app_id = app_handle.config().identifier.clone();
     match get_credential(DEEPL_SERVICE, &app_id) {
         Ok(_) => true,
-        Err(_) => false
+        Err(_) => false,
     }
 }
 
