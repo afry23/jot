@@ -11,10 +11,10 @@ export const activeTabColor = derived(
 );
 
 // Function to set active tab
-export function setActiveTab(index: number) {
+export async function setActiveTab(index: number) {
   if (index >= 0 && index <= 6) {
     activeTab.set(index);
-    saveActiveTab(index);
+    await saveActiveTab(index);
   }
 }
 

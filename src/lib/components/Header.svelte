@@ -9,14 +9,17 @@
   import "../fa-icons";
   import { tabColors } from "$lib/utils/colors";
   import { invoke } from "@tauri-apps/api/core";
-    import { nextcloudConfig, type NextcloudConfig } from "$lib/stores/nextcloudSync";
+  import {
+    nextcloudConfig,
+    type NextcloudConfig,
+  } from "$lib/stores/nextcloudSync";
 
   // Reference to modal component
   let settingsModal: Modal;
 
   // Handle tab click
-  function handleTabClick(index: number) {
-    setActiveTab(index);
+  async function handleTabClick(index: number) {
+    await setActiveTab(index);
   }
 
   // Function to check if a tab is empty
@@ -36,8 +39,8 @@
         auto_sync: true,
         last_sync: null,
         show_sync_status: true,
-      }
-      await invoke("my_custom_command", { nextcloudConfig: myNextcloudConfig});
+      };
+      await invoke("my_custom_command", { nextcloudConfig: myNextcloudConfig });
     } catch (error) {
       console.error("Error executing command:", error);
     }
@@ -78,7 +81,7 @@
         {color}
         active={$activeTab === i}
         isEmpty={isTabEmpty(i)}
-        onClick={() => handleTabClick(i)}
+        onClick={async () => await handleTabClick(i)}
       />
     {/each}
   </div>
