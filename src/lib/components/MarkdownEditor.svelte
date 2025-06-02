@@ -117,6 +117,11 @@
         }
     }
 
+    export function reloadContentFromStore() {
+        console.log("reloadContentFromStore called");
+        updateEditorContent();
+    }
+
     function handleLinkModalSubmit(
         event: CustomEvent<{ href: string; text: string }>,
     ) {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { notes } from "$lib/stores/notes";
   import { activeTab } from "$lib/stores/tabs";
   import { theme } from "$lib/stores/settings";
@@ -69,13 +70,14 @@
     await translateText(
       selectedText,
       targetLanguage,
-      sourceLanguage !== "auto" ? sourceLanguage : undefined
+      sourceLanguage !== "auto" ? sourceLanguage : undefined,
     );
   }
 
   // Replace selected text with translation
   function applyTranslation() {
     if (!$translationResult) return;
+    const currentTab = get(activeTab);
 
     const selection = window.getSelection();
     if (selection && selection.toString()) {
@@ -93,22 +95,29 @@
           currentValue.substring(0, start) +
           $translationResult +
           currentValue.substring(end);
+
+        selectedText =
+          currentValue.substring(0, start) +
+          $translationResult +
+          currentValue.substring(end);
       } else {
         // If not directly in a textarea, replace the full content
         notes.update((state) => {
-          state[$activeTab] = state[$activeTab].replace(
+          state[currentTab] = state[currentTab].replace(
             selectedText,
-            $translationResult
+            $translationResult,
           );
           return state;
         });
+        selectedText = selectedText.replace(selectedText, $translationResult);
       }
     } else {
       // Replace the full note content
       notes.update((state) => {
-        state[$activeTab] = $translationResult;
+        state[currentTab] = $translationResult;
         return state;
       });
+      selectedText = $translationResult;
     }
 
     onClose();

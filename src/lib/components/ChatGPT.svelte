@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { notes } from "$lib/stores/notes";
   import { activeTab } from "$lib/stores/tabs";
   import { theme } from "$lib/stores/settings";
@@ -19,6 +20,7 @@
   export let onClose: () => void;
   export let initialText: string = "";
   export let mode: "chat" | "summarize" = "chat";
+  export let markdownEditorRef;
 
   // Local state
   let userInput: string = initialText;
@@ -60,16 +62,18 @@
   function applyToNote() {
     if (!responseText) return;
 
+    const currentTab = get(activeTab);
+
     notes.update((state) => {
       // If we have any text selected, this will replace just that text
-      const currentNote = state[$activeTab] || "";
+      const currentNote = state[currentTab] || "";
 
       // For summarize mode, we replace the entire note
       if (mode === "summarize") {
-        state[$activeTab] = responseText;
+        state[currentTab] = responseText;
       } else {
         // For chat mode, we append the response
-        state[$activeTab] = currentNote + "\n\n" + responseText;
+        state[currentTab] = currentNote + "\n\n" + responseText;
       }
 
       return state;

@@ -298,6 +298,7 @@ pub fn run() {
             credential_manager::has_deepl_credential,
             credential_manager::store_chatgpt_credential,
             credential_manager::get_chatgpt_credential,
+            credential_manager::has_chatgpt_credential,
             storage_service::get_storage_settings,
             storage_service::set_storage_path
         ])
