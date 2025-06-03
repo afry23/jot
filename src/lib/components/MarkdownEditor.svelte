@@ -14,7 +14,7 @@
   import { gapCursor } from "prosemirror-gapcursor";
   import { TextSelection } from "prosemirror-state";
   import { theme, fontSize } from "$lib/stores/settings";
-  import { activeTab } from "$lib/stores/tabs";
+  import { activeTab, setActiveTab } from "$lib/stores/tabs";
   import { notes, updateNote } from "$lib/stores/notes";
   import { tabColors, withOpacity } from "$lib/utils/colors";
   import { saveNote } from "$lib/utils/persistence";
@@ -822,8 +822,31 @@
     // Set editor as ready
     editorReady = true;
 
+    // Listen for safe tab switching events
+    const handleSaveContentEvent = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ newTabIndex: number }>;
+      const { newTabIndex } = customEvent.detail;
+      
+      // Save current content first
+      if (currentView) {
+        const currentContent = currentView.content;
+        const currentStoreContent = $notes[$activeTab] || '';
+        
+        if (currentContent !== currentStoreContent) {
+          updateNote($activeTab, currentContent);
+          await saveNote($activeTab, currentContent);
+        }
+      }
+      
+      // Now it's safe to switch tabs
+      await setActiveTab(newTabIndex);
+    };
+
+    window.addEventListener('save-current-content', handleSaveContentEvent);
+
     // Return cleanup function
     return () => {
+      window.removeEventListener('save-current-content', handleSaveContentEvent);
       if (currentView) {
         currentView.destroy();
         currentView = null;

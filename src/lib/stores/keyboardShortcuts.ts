@@ -3,10 +3,11 @@ import { toggleViewMode } from "./viewMode";
 import { toggleTheme } from "./settings";
 import { get } from "svelte/store";
 import { myredo, myundo } from "./history";
-import { notes } from "./notes";
+import { notes, updateNote } from "./notes";
 import { register } from '@tauri-apps/plugin-global-shortcut';
 import { Window } from "@tauri-apps/api/window";
 import { logger } from "$lib/utils/logger";
+import { saveNote } from "$lib/utils/persistence";
 
 
 async function toggleWindow() {
@@ -27,6 +28,17 @@ async function toggleWindow() {
   }
 }
 
+// Safe tab switching that ensures current content is saved first
+async function safeSwitchTab(newTabIndex: number) {
+  // Dispatch a custom event to request current content from the editor
+  const saveContentEvent = new CustomEvent('save-current-content', {
+    detail: { newTabIndex }
+  });
+  
+  // Let the editor handle saving, then it will call setActiveTab
+  window.dispatchEvent(saveContentEvent);
+}
+
 // Function to setup global keyboard shortcuts
 export async function setupKeyboardShortcuts() {
   // Only set up shortcuts once
@@ -42,7 +54,7 @@ export async function setupKeyboardShortcuts() {
       event.preventDefault();
       const tabIndex = parseInt(event.key) - 1;
       if (tabIndex >= 0 && tabIndex < 7) {
-        setActiveTab(tabIndex);
+        safeSwitchTab(tabIndex);
       }
       return;
     }
