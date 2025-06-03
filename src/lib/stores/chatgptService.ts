@@ -109,12 +109,6 @@ export async function sendToChatGPT(
 
   const config = get(chatGPTConfig);
 
-  if (!config.api_key) {
-    const errorMessage = "ChatGPT API key is not configured";
-    chatGPTError.set(errorMessage);
-    return "";
-  }
-
   isProcessing.set(true);
   chatGPTError.set(null);
   chatGPTResponse.set("");
