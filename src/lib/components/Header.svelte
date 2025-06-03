@@ -8,14 +8,9 @@
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import "../fa-icons";
   import { tabColors } from "$lib/utils/colors";
-  import { invoke } from "@tauri-apps/api/core";
-  import {
-    nextcloudConfig,
-    type NextcloudConfig,
-  } from "$lib/stores/nextcloudSync";
 
   // Reference to modal component
-  let settingsModal: Modal;
+  let settingsModal: Modal | undefined = undefined;
 
   // Handle tab click
   async function handleTabClick(index: number) {
@@ -25,25 +20,6 @@
   // Function to check if a tab is empty
   function isTabEmpty(index: number): boolean {
     return !$notes[index] || $notes[index].trim() === "";
-  }
-
-  async function testCommand() {
-    try {
-      const myNextcloudConfig: NextcloudConfig = {
-        server_url: "https://example.com",
-        username: "user",
-        password: "password",
-        sync_folder: "/path/to/sync/folder",
-        sync_interval_minutes: 5,
-        sync_on_startup: true,
-        auto_sync: true,
-        last_sync: null,
-        show_sync_status: true,
-      };
-      await invoke("my_custom_command", { nextcloudConfig: myNextcloudConfig });
-    } catch (error) {
-      console.error("Error executing command:", error);
-    }
   }
 
   // Close window function
