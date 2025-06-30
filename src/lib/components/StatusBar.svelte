@@ -33,6 +33,7 @@
   import SyncIndicator from "./SyncIndicator.svelte";
   import Translator from "./Translator.svelte";
 
+  export let markdownEditorRef;
   export let showBackupStatus: boolean = false; // Prop to control backup status visibility
   let syncOperation: "sync" | "upload" | "download" = "sync";
 
@@ -516,13 +517,23 @@
 
 <!-- Translator panel -->
 {#if isTranslatorVisible}
-  <Translator onClose={hideTranslator} />
+  <Translator
+    onClose={() => {
+      hideTranslator();
+      console.log("markdownEditorRef", markdownEditorRef);
+      if (markdownEditorRef) markdownEditorRef.reloadContentFromStore();
+    }}
+  />
 {/if}
 
 <!-- ChatGPT panel -->
 {#if isChatGPTVisible}
   <ChatGPT
-    onClose={hideChatGPT}
+    onClose={() => {
+      hideChatGPT();
+      console.log("markdownEditorRef", markdownEditorRef);
+      if (markdownEditorRef) markdownEditorRef.reloadContentFromStore();
+    }}
     initialText={selectedText}
     mode={chatGPTMode}
   />

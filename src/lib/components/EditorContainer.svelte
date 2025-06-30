@@ -1,9 +1,10 @@
 <script lang="ts">
-  import Editor from "./Editor.svelte";
   import MarkdownEditor from "./MarkdownEditor.svelte";
   import { activeTab } from "$lib/stores/tabs";
   import { notes, updateNote } from "$lib/stores/notes";
   import { emptyTabColor, tabColors } from "$lib/utils/colors";
+
+  export let markdownEditorRef;
 
   // Function to check if the current tab is empty
   $: isCurrentTabEmpty =
@@ -28,6 +29,7 @@
   <div class="content-container">
     {#key $activeTab}
       <MarkdownEditor
+        bind:this={markdownEditorRef}
         initialContent={$notes[$activeTab] || ""}
         on:change={handleMarkdownEditorChange}
       />

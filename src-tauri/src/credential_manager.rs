@@ -152,3 +152,12 @@ pub fn get_chatgpt_credential(app_handle: AppHandle) -> Result<String, String> {
     let app_id = app_handle.config().identifier.clone();
     get_credential(CHATGPT_SERVICE, &app_id)
 }
+
+#[command]
+pub fn has_chatgpt_credential(app_handle: AppHandle) -> bool {
+    let app_id = app_handle.config().identifier.clone();
+    match get_credential(CHATGPT_SERVICE, &app_id) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}

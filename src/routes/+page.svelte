@@ -18,6 +18,8 @@
 
   let loading = true;
 
+  let markdownEditorRef;
+
   // Load notes and settings on mount
   onMount(() => {
     // Load application settings and notes asynchronously
@@ -114,10 +116,10 @@
         <p>Loading...</p>
       </div>
     {:else}
-      <EditorContainer />
+      <EditorContainer bind:markdownEditorRef />
     {/if}
   </main>
-  <StatusBar />
+  <StatusBar {markdownEditorRef} />
 </div>
 
 <style>

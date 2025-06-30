@@ -229,8 +229,7 @@ pub fn save_chatgpt_config_command(
     // Store API key in secure storage if provided
     if let Some(key) = api_key {
         if !key.is_empty() {
-            credential_manager::store_chatgpt_credential(app_handle.clone(), key.clone())?;
-            config.api_key = Some(key);
+            credential_manager::store_chatgpt_credential(app_handle.clone(), key)?;
         }
     }
 
