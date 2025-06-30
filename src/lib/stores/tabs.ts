@@ -1,6 +1,6 @@
 import { getTabBackgroundColor, tabColors } from "$lib/utils/colors";
 import { invoke } from "@tauri-apps/api/core";
-import { derived, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 // Store for active tab index (0-6)
 export const activeTab = writable<number>(0);
@@ -13,6 +13,7 @@ export const activeTabColor = derived(
 // Function to set active tab
 export function setActiveTab(index: number) {
   if (index >= 0 && index <= 6) {
+    console.log(`Setting active tab from ${get(activeTab)} to ${index}`);
     activeTab.set(index);
     saveActiveTab(index);
   }

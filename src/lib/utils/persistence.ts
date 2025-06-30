@@ -4,6 +4,9 @@ import { logger } from "$lib/utils/logger";
 
 // Save a note to storage
 export async function saveNote(tabIndex: number, content: string) {
+  console.log(
+    `Persistence: Saving note for tab ${tabIndex} with content length ${content.length}`
+  );
   try {
     // Use local storage for quick saving (to reduce disk writes)
     localStorage.setItem(`jot-note-${tabIndex}`, content);
@@ -104,7 +107,7 @@ export async function setStoragePath(path: string | null): Promise<void> {
 // For TypeScript
 declare global {
   interface Window {
-    savingTimeout: number | null;
+    savingTimeout: number | ReturnType<typeof setTimeout> | null;
   }
 }
 
