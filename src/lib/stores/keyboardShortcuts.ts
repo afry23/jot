@@ -4,22 +4,20 @@ import { toggleTheme } from "./settings";
 import { get } from "svelte/store";
 import { myredo, myundo } from "./history";
 import { notes, updateNote } from "./notes";
-import { register } from '@tauri-apps/plugin-global-shortcut';
+import { register } from "@tauri-apps/plugin-global-shortcut";
 import { Window } from "@tauri-apps/api/window";
 import { logger } from "$lib/utils/logger";
 import { saveNote } from "$lib/utils/persistence";
 
-
 async function toggleWindow() {
-  console.log('Toggling window visibility');
+  console.log("Toggling window visibility");
   try {
     let visible = await Window.getCurrent().isVisible();
     if (visible) {
-      console.log('Hiding window');
+      console.log("Hiding window");
       await Window.getCurrent().hide();
-    }
-    else {
-      console.log('Showing window');
+    } else {
+      console.log("Showing window");
       await Window.getCurrent().show();
       await Window.getCurrent().setFocus();
     }
@@ -31,10 +29,10 @@ async function toggleWindow() {
 // Safe tab switching that ensures current content is saved first
 async function safeSwitchTab(newTabIndex: number) {
   // Dispatch a custom event to request current content from the editor
-  const saveContentEvent = new CustomEvent('save-current-content', {
-    detail: { newTabIndex }
+  const saveContentEvent = new CustomEvent("save-current-content", {
+    detail: { newTabIndex },
   });
-  
+
   // Let the editor handle saving, then it will call setActiveTab
   window.dispatchEvent(saveContentEvent);
 }
@@ -53,8 +51,21 @@ export async function setupKeyboardShortcuts() {
     if (event.ctrlKey && event.key >= "1" && event.key <= "7") {
       event.preventDefault();
       const tabIndex = parseInt(event.key) - 1;
-      if (tabIndex >= 0 && tabIndex < 7) {
-        safeSwitchTab(tabIndex);
+      if (tabIndex >= 0 && tabIndex <= 6) {
+        // Blur any focused editor elements to ensure content is saved properly
+        const activeElement = document.activeElement as HTMLElement;
+        if (
+          activeElement &&
+          (activeElement.classList.contains("markdown-textarea") ||
+            activeElement.classList.contains("ProseMirror"))
+        ) {
+          activeElement.blur();
+        }
+
+        // Small delay to ensure content is properly saved before switching
+        setTimeout(() => {
+          setActiveTab(tabIndex);
+        }, 10);
       }
       return;
     }

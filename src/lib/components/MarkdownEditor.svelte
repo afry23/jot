@@ -103,9 +103,17 @@
 
   // Track tab changes and update editor content accordingly
   $: if ($activeTab !== previousTab && editorReady) {
-    previousTab = $activeTab;
-    updateEditorContent();
+  // Save current content before switching tabs
+  if (currentView && previousTab >= 0) {
+    const currentContent = currentView.content;
+    if (currentContent !== $notes[previousTab]) {
+      updateNote(previousTab, currentContent);
+    }
   }
+  
+  previousTab = $activeTab;
+  updateEditorContent();
+}
 
   async function openUrl(url: string) {
     try {
@@ -232,22 +240,22 @@
 
   // Handle content changes and save to store
   function handleContentChange() {
-    if (!currentView || !editorReady) return;
+  if (!currentView || !editorReady) return;
 
-    const newContent = currentView.content;
+  const newContent = currentView.content;
 
-    // Only update if content actually changed
-    if (newContent !== $notes[$activeTab]) {
-      // Update the notes store
-      updateNote($activeTab, newContent);
+  // Only update if content actually changed and we're still on the same tab
+  if (newContent !== $notes[$activeTab] && $activeTab === previousTab) {
+    // Update the notes store
+    updateNote($activeTab, newContent);
 
-      // Save note to persistent storage if needed
-      if (newContent !== lastSavedContent) {
-        saveNote($activeTab, newContent);
-        lastSavedContent = newContent;
-      }
+    // Save note to persistent storage if needed
+    if (newContent !== lastSavedContent) {
+      saveNote($activeTab, newContent);
+      lastSavedContent = newContent;
     }
   }
+}
 
   function handleUndo() {
     console.log("Handling undo for tab:", $activeTab);

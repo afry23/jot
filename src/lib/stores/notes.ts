@@ -18,6 +18,12 @@ export const notes = writable<Record<number, string>>({
 
 // Update a specific note
 export function updateNote(tabIndex: number, content: string) {
+  // Safety check to prevent cross-tab content pollution
+  if (tabIndex < 0 || tabIndex > 6) {
+    console.warn(`Invalid tab index: ${tabIndex}`);
+    return;
+  }
+
   // Push to history before updating
   pushToHistory(tabIndex, content);
 

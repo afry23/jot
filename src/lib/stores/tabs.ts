@@ -1,6 +1,6 @@
 import { tabColors } from "$lib/utils/colors";
 import { invoke } from "@tauri-apps/api/core";
-import { derived, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 const MAX_TAB_INDEX = 6; // Maximum tab index (0-6)
 
@@ -19,6 +19,7 @@ export const activeTabColor = derived(
 // Function to set active tab
 export async function setActiveTab(tabIndex: number) {
   if (tabIndex >= 0 && tabIndex <= MAX_TAB_INDEX) {
+    console.log(`Setting active tab from ${get(activeTab)} to ${tabIndex}`);
     activeTab.set(tabIndex);
     await saveActiveTab(tabIndex);
     return true;
