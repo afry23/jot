@@ -103,17 +103,17 @@
 
   // Track tab changes and update editor content accordingly
   $: if ($activeTab !== previousTab && editorReady) {
-  // Save current content before switching tabs
-  if (currentView && previousTab >= 0) {
-    const currentContent = currentView.content;
-    if (currentContent !== $notes[previousTab]) {
-      updateNote(previousTab, currentContent);
+    // Save current content before switching tabs
+    if (currentView && previousTab >= 0) {
+      const currentContent = currentView.content;
+      if (currentContent !== $notes[previousTab]) {
+        updateNote(previousTab, currentContent);
+      }
     }
+
+    previousTab = $activeTab;
+    updateEditorContent();
   }
-  
-  previousTab = $activeTab;
-  updateEditorContent();
-}
 
   async function openUrl(url: string) {
     try {
@@ -167,7 +167,7 @@
   async function updateEditorContent() {
     updateVersion += 1;
     const thisVersion = updateVersion;
-    const tabIndex = $activeTab; 
+    const tabIndex = $activeTab;
 
     if ($notes[tabIndex] !== undefined) {
       currentContent = $notes[tabIndex] || "";
@@ -193,8 +193,8 @@
 
       await tick(); // Ensure DOM is updated before creating new view
 
-       if (thisVersion !== updateVersion) return;
-       if (tabIndex !== $activeTab) return;
+      if (thisVersion !== updateVersion) return;
+      if (tabIndex !== $activeTab) return;
 
       // Create a new view with the latest content
       const ViewClass =
@@ -240,22 +240,22 @@
 
   // Handle content changes and save to store
   function handleContentChange() {
-  if (!currentView || !editorReady) return;
+    if (!currentView || !editorReady) return;
 
-  const newContent = currentView.content;
+    const newContent = currentView.content;
 
-  // Only update if content actually changed and we're still on the same tab
-  if (newContent !== $notes[$activeTab] && $activeTab === previousTab) {
-    // Update the notes store
-    updateNote($activeTab, newContent);
+    // Only update if content actually changed and we're still on the same tab
+    if (newContent !== $notes[$activeTab] && $activeTab === previousTab) {
+      // Update the notes store
+      updateNote($activeTab, newContent);
 
-    // Save note to persistent storage if needed
-    if (newContent !== lastSavedContent) {
-      saveNote($activeTab, newContent);
-      lastSavedContent = newContent;
+      // Save note to persistent storage if needed
+      if (newContent !== lastSavedContent) {
+        saveNote($activeTab, newContent);
+        lastSavedContent = newContent;
+      }
     }
   }
-}
 
   function handleUndo() {
     console.log("Handling undo for tab:", $activeTab);
@@ -610,14 +610,17 @@
               second: "2-digit",
             });
             // Insert as bold markdown (like MarkdownView)
-            const timestamp = `**${formattedDate}** `;
-            dispatch(
-              state.tr.insertText(
-                timestamp,
-                state.selection.from,
-                state.selection.to
-              )
-            );
+            const timestamp = `${formattedDate} `;
+            const { from, to } = state.selection;
+            // Insert the text and apply bold mark
+            const tr = state.tr
+              .insertText(timestamp, from, to)
+              .addMark(
+                from,
+                from + timestamp.length,
+                schema.marks.strong.create()
+              );
+            dispatch(tr);
             return true;
           },
           "Mod-z": (state, dispatch) => {
@@ -834,27 +837,30 @@
     const handleSaveContentEvent = async (event: Event) => {
       const customEvent = event as CustomEvent<{ newTabIndex: number }>;
       const { newTabIndex } = customEvent.detail;
-      
+
       // Save current content first
       if (currentView) {
         const currentContent = currentView.content;
-        const currentStoreContent = $notes[$activeTab] || '';
-        
+        const currentStoreContent = $notes[$activeTab] || "";
+
         if (currentContent !== currentStoreContent) {
           updateNote($activeTab, currentContent);
           await saveNote($activeTab, currentContent);
         }
       }
-      
+
       // Now it's safe to switch tabs
       await setActiveTab(newTabIndex);
     };
 
-    window.addEventListener('save-current-content', handleSaveContentEvent);
+    window.addEventListener("save-current-content", handleSaveContentEvent);
 
     // Return cleanup function
     return () => {
-      window.removeEventListener('save-current-content', handleSaveContentEvent);
+      window.removeEventListener(
+        "save-current-content",
+        handleSaveContentEvent
+      );
       if (currentView) {
         currentView.destroy();
         currentView = null;
