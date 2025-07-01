@@ -8,6 +8,7 @@
     defaultMarkdownSerializer,
   } from "prosemirror-markdown";
   import { buildInputRules, buildKeymap } from "prosemirror-example-setup";
+  import { liftListItem, sinkListItem } from "prosemirror-schema-list";
   import { keymap } from "prosemirror-keymap";
   import { baseKeymap } from "prosemirror-commands";
   import { dropCursor } from "prosemirror-dropcursor";
@@ -420,20 +421,21 @@
         return true;
       } else if (event.key === "Tab") {
         console.log("Tab key pressed in MarkdownView");
-        // Tab indentation for list items
         event.preventDefault();
+
         if (event.shiftKey) {
-          this.handleUnindent();
+          // Try to lift (unindent) list item
+          return this.liftListItem();
         } else {
-          this.handleIndent();
+          // Try to sink (indent) list item
+          return this.sinkListItem();
         }
-        return true;
       }
       return false;
     }
 
-    handleIndent() {
-      const { selectionStart, selectionEnd, value } = this.textarea;
+    sinkListItem(): boolean {
+      const { selectionStart, value } = this.textarea;
       const lines = value.split("\n");
 
       // Find the line containing the cursor
@@ -446,22 +448,21 @@
           currentLineIndex = i;
           break;
         }
-        currentPos = lineEnd + 1; // +1 for the newline character
+        currentPos = lineEnd + 1;
       }
 
-      if (currentLineIndex === -1) return;
+      if (currentLineIndex === -1) return false;
 
       const currentLine = lines[currentLineIndex];
-      console.log("Current line for indent:", `"${currentLine}"`);
 
-      // Check if current line is a list item (starts with - or number.)
-      const listItemRegex = /^(\s*)(-|\d+\.)\s+(.*)$/;
+      // Check if current line is a list item
+      const listItemRegex = /^(\s*)(-|\d+\.)\s(.*)$/;
       const match = currentLine.match(listItemRegex);
 
       if (match) {
-        console.log("Found list item, adding indentation");
-        console.log("Match groups:", match);
-        // Add 4 spaces before the existing content (including the marker)
+        console.log("Found list item, sinking (indenting)");
+
+        // Add 4 spaces before the existing content
         lines[currentLineIndex] = "    " + currentLine;
 
         const newValue = lines.join("\n");
@@ -474,11 +475,12 @@
 
         handleContentChange();
         this.saveCursorPosition();
+        return true;
       } else {
+        // Not a list item, insert 4 spaces at cursor
         console.log("Not a list item, inserting spaces at cursor");
-        // If not a list item, just insert 4 spaces at cursor position
         const before = value.substring(0, selectionStart);
-        const after = value.substring(selectionEnd);
+        const after = value.substring(selectionStart);
         const newValue = before + "    " + after;
 
         this.textarea.value = newValue;
@@ -487,11 +489,12 @@
 
         handleContentChange();
         this.saveCursorPosition();
+        return true;
       }
     }
 
-    handleUnindent() {
-      const { selectionStart, selectionEnd, value } = this.textarea;
+    liftListItem(): boolean {
+      const { selectionStart, value } = this.textarea;
       const lines = value.split("\n");
 
       // Find the line containing the cursor
@@ -504,47 +507,41 @@
           currentLineIndex = i;
           break;
         }
-        currentPos = lineEnd + 1; // +1 for the newline character
+        currentPos = lineEnd + 1;
       }
 
-      if (currentLineIndex === -1) return;
+      if (currentLineIndex === -1) return false;
 
       const currentLine = lines[currentLineIndex];
-      console.log("Current line for unindent:", `"${currentLine}"`);
 
-      // Check if current line is a list item
-      const listItemRegex = /^(\s*)(-|\d+\.)\s+(.*)$/;
+      // Check if current line is a list item with indentation
+      const listItemRegex = /^(\s*)(-|\d+\.)\s(.*)$/;
       const match = currentLine.match(listItemRegex);
 
-      if (match) {
-        const indentation = match[1];
-        console.log("Current indentation length:", indentation.length);
+      if (match && match[1].length >= 4) {
+        console.log("Found indented list item, lifting (unindenting)");
 
-        if (indentation.length >= 4) {
-          console.log("Found indented list item, removing indentation");
-          // Remove 4 spaces from the beginning of the line
-          lines[currentLineIndex] = currentLine.substring(4);
+        // Remove 4 spaces from the beginning
+        lines[currentLineIndex] = currentLine.substring(4);
 
-          const newValue = lines.join("\n");
-          this.textarea.value = newValue;
+        const newValue = lines.join("\n");
+        this.textarea.value = newValue;
 
-          // Adjust cursor position (subtract 4 spaces)
-          const newCursorPos = Math.max(selectionStart - 4, currentPos);
-          this.textarea.selectionStart = this.textarea.selectionEnd =
-            newCursorPos;
+        // Adjust cursor position (subtract 4 spaces)
+        const newCursorPos = Math.max(selectionStart - 4, currentPos);
+        this.textarea.selectionStart = this.textarea.selectionEnd =
+          newCursorPos;
 
-          handleContentChange();
-          this.saveCursorPosition();
-        } else {
-          console.log("List item has no indentation to remove");
-        }
-      } else {
-        console.log("Trying to remove spaces at cursor");
-        // Try to remove 4 spaces before cursor
+        handleContentChange();
+        this.saveCursorPosition();
+        return true;
+      } else if (!match) {
+        // Not a list item, try to remove 4 spaces before cursor
+        console.log("Not a list item, trying to remove spaces before cursor");
         const before = value.substring(0, selectionStart);
         if (before.endsWith("    ")) {
           const newBefore = before.substring(0, before.length - 4);
-          const after = value.substring(selectionEnd);
+          const after = value.substring(selectionStart);
           const newValue = newBefore + after;
 
           this.textarea.value = newValue;
@@ -553,7 +550,13 @@
 
           handleContentChange();
           this.saveCursorPosition();
+          return true;
         }
+        return false;
+      } else {
+        // List item with no indentation to remove
+        console.log("List item has no indentation to remove");
+        return false;
       }
     }
 
@@ -674,8 +677,6 @@
       const plugins = [
         buildInputRules(schema),
         history(),
-        keymap(buildKeymap(schema)),
-        keymap(baseKeymap),
         keymap({
           "Mod-b": (state, dispatch) => {
             const { from, to } = state.selection;
@@ -762,12 +763,21 @@
           },
           Tab: (state, dispatch) => {
             console.log("Tab key pressed in ProseMirrorView");
-            if (!dispatch) return false;
-            return this.handleProseMirrorIndent(state, dispatch, false);
+            // Try to sink (indent) list item first
+            if (sinkListItem(schema.nodes.list_item)(state, dispatch)) {
+              return true;
+            }
+            // If not in a list item, fall back to inserting spaces
+            if (dispatch) {
+              const tr = state.tr.insertText("    ", state.selection.from);
+              dispatch(tr);
+            }
+            return true;
           },
           "Shift-Tab": (state, dispatch) => {
-            if (!dispatch) return false;
-            return this.handleProseMirrorIndent(state, dispatch, true);
+            console.log("Shift-Tab key pressed in ProseMirrorView");
+            // Try to lift (unindent) list item
+            return liftListItem(schema.nodes.list_item)(state, dispatch);
           },
           "Mod-z": (state, dispatch) => {
             return undo(state, dispatch);
@@ -779,6 +789,8 @@
             return require("prosemirror-history").redo(state, dispatch);
           },
         }),
+        keymap(buildKeymap(schema)),
+        keymap(baseKeymap),
         dropCursor(),
         gapCursor(),
       ];
@@ -896,91 +908,6 @@
       }
       if (this.container) {
         this.container.innerHTML = "";
-      }
-    }
-
-    handleProseMirrorIndent(state: any, dispatch: any, unindent: boolean) {
-      const { $from } = state.selection;
-
-      // Find the current line boundaries
-      let lineStart = $from.start($from.depth);
-      let lineEnd = $from.end($from.depth);
-
-      // If we're in a paragraph, get the paragraph boundaries
-      if ($from.parent.type.name === "paragraph") {
-        lineStart = $from.start($from.depth);
-        lineEnd = $from.end($from.depth);
-      }
-
-      // Get the text content of the current line/paragraph
-      const lineText = state.doc.textBetween(lineStart, lineEnd, "\n", "\n");
-      console.log("ProseMirror line text:", `"${lineText}"`);
-
-      // Check if current line is a list item (starts with - or number.)
-      const listItemRegex = /^(\s*)(-|\d+\.)\s+(.*)$/;
-      const match = lineText.match(listItemRegex);
-
-      if (match) {
-        console.log("ProseMirror: Found list item", match);
-        let newText;
-
-        if (unindent) {
-          // Check if there's indentation to remove
-          if (lineText.startsWith("    ")) {
-            newText = lineText.substring(4);
-          } else {
-            console.log("No indentation to remove");
-            return false;
-          }
-        } else {
-          // Add 4 spaces at the beginning
-          newText = "    " + lineText;
-        }
-
-        console.log("Replacing:", `"${lineText}"`, "with:", `"${newText}"`);
-
-        // Replace the entire line with the new indented version
-        const tr = state.tr.replaceWith(
-          lineStart,
-          lineEnd,
-          state.schema.text(newText)
-        );
-
-        // Adjust cursor position
-        const cursorOffset = $from.pos - lineStart;
-        const adjustment = unindent ? -4 : 4;
-        const newCursorPos = Math.max(
-          lineStart,
-          Math.min(lineStart + newText.length, $from.pos + adjustment)
-        );
-
-        tr.setSelection(
-          state.selection.constructor.near(tr.doc.resolve(newCursorPos))
-        );
-
-        dispatch(tr);
-        return true;
-      } else {
-        console.log("ProseMirror: Not a list item, handling as regular text");
-        // Not a list item, just add/remove spaces at cursor
-        if (unindent) {
-          // Check if there are 4 spaces before the cursor to remove
-          const beforeCursor = state.doc.textBetween(
-            Math.max(lineStart, $from.pos - 4),
-            $from.pos
-          );
-          if (beforeCursor.length >= 4 && beforeCursor.endsWith("    ")) {
-            const tr = state.tr.delete($from.pos - 4, $from.pos);
-            dispatch(tr);
-            return true;
-          }
-          return false;
-        } else {
-          // Insert 4 spaces
-          const tr = state.tr.insertText("    ", $from.pos);
-          dispatch(tr);
-          return true;
-        }
       }
     }
 
