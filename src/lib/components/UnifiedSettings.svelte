@@ -11,8 +11,6 @@
   import Button from "./Button.svelte";
   import BackupSettings from "./BackupSettings.svelte";
   import LogSettings from "./LogSettings.svelte";
-  import LanguageSettings from "./LanguageSettings.svelte";
-  import ChatGPTSettings from "./ChatGPTSettings.svelte";
   import NextcloudSettings from "./NextcloudSettings.svelte";
   import StorageSettings from "./StorageSettings.svelte";
 
@@ -28,8 +26,6 @@
     | "appearance"
     | "storage"
     | "nextcloud"
-    | "language"
-    | "ai"
     | "backups"
     | "about"
     | "logs";
@@ -79,28 +75,6 @@
           <FontAwesomeIcon icon="cloud" class="sidebar-icon" />
         </div>
         <span>Nextcloud</span>
-      </button>
-
-      <button
-        class="sidebar-tab"
-        class:active={activeTab === "language"}
-        on:click={() => setActiveTab("language")}
-      >
-        <div class="sidebar-icon">
-          <FontAwesomeIcon icon="language" class="sidebar-icon" />
-        </div>
-        <span>Language Tools</span>
-      </button>
-
-      <button
-        class="sidebar-tab"
-        class:active={activeTab === "ai"}
-        on:click={() => setActiveTab("ai")}
-      >
-        <div class="sidebar-icon">
-          <FontAwesomeIcon icon="robot" class="sidebar-icon" />
-        </div>
-        <span>AI</span>
       </button>
 
       <button
@@ -192,20 +166,6 @@
     {#if activeTab === "nextcloud"}
       <div class="tab-content">
         <NextcloudSettings />
-      </div>
-    {/if}
-
-    <!-- Language Tools tab -->
-    {#if activeTab === "language"}
-      <div class="tab-content">
-        <LanguageSettings />
-      </div>
-    {/if}
-
-    <!-- AI tab -->
-    {#if activeTab === "ai"}
-      <div class="tab-content">
-        <ChatGPTSettings />
       </div>
     {/if}
 
