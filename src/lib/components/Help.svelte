@@ -81,33 +81,10 @@
           <li>Automatic saving</li>
           <li>Nextcloud sync for cross-device access</li>
           <li>Backup and restore capability</li>
-          <li>AI-powered writing assistance</li>
-          <li>Grammar checking and translation tools</li>
         </ul>
       </div>
 
-      <div class="help-section">
-        <h3>AI Features</h3>
-        <p>
-          Jot includes integration with ChatGPT for enhanced writing assistance:
-        </p>
-        <ul>
-          <li>
-            <strong>Chat with ChatGPT</strong>: Use selected text as a prompt or
-            create a new prompt
-          </li>
-          <li>
-            <strong>Summarize</strong>: Automatically summarize your notes using
-            AI
-          </li>
-        </ul>
-        <p>
-          To use these features, you need to provide your OpenAI API key in the
-          AI Settings.
-        </p>
-      </div>
-
-      <div class="about-section">
+        <div class="about-section">
         <h3>About Jot</h3>
         <p>
           A minimal note-taking app for quick thoughts and ideas. Organize your

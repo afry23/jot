@@ -1,7 +1,5 @@
 <script lang="ts">
   import { createBackup, loadBackups } from "$lib/stores/backupStore";
-  import { loadChatGPTConfig } from "$lib/stores/chatgptService";
-  import { loadLanguageServicesConfig } from "$lib/stores/languageServices";
   import {
     downloadAllNotes,
     initSync,
@@ -26,12 +24,9 @@
   import { onMount } from "svelte";
   import "../fa-icons";
   import BackupStatus from "./BackupStatus.svelte";
-  import ChatGPT from "./ChatGPT.svelte";
-  import GrammarChecker from "./GrammarChecker.svelte";
   import Help from "./Help.svelte";
   import Modal from "./Modal.svelte";
   import SyncIndicator from "./SyncIndicator.svelte";
-  import Translator from "./Translator.svelte";
 
   export let markdownEditorRef;
   export let showBackupStatus: boolean = false; // Prop to control backup status visibility
@@ -54,19 +49,12 @@
   // Reference to components
   let helpComponent: Help;
   let settingsModal: Modal;
-  let isGrammarCheckerVisible = false;
-  let isTranslatorVisible = false;
-  let isChatGPTVisible = false;
   let isCloudMenuOpen = false;
 
   // Language menu state
   let isLanguageMenuOpen = false;
   // AI menu state
   let isAIMenuOpen = false;
-
-  // AI Mode state
-  let chatGPTMode: "chat" | "summarize" = "chat";
-  let selectedText: string = "";
 
   function openHelp() {
     if (helpComponent) {
@@ -109,57 +97,6 @@
         console.error("Error triggering download:", error);
       });
   }
-  function toggleLanguageMenu() {
-    isLanguageMenuOpen = !isLanguageMenuOpen;
-    if (isLanguageMenuOpen) {
-      isAIMenuOpen = false;
-      isCloudMenuOpen = false;
-    }
-  }
-
-  function toggleAIMenu() {
-    isAIMenuOpen = !isAIMenuOpen;
-    if (isAIMenuOpen) {
-      isLanguageMenuOpen = false;
-      isCloudMenuOpen = false;
-    }
-  }
-
-  function showGrammarChecker() {
-    isGrammarCheckerVisible = true;
-    isLanguageMenuOpen = false;
-  }
-
-  function hideGrammarChecker() {
-    isGrammarCheckerVisible = false;
-  }
-
-  function showTranslator() {
-    isTranslatorVisible = true;
-    isLanguageMenuOpen = false;
-  }
-
-  function hideTranslator() {
-    isTranslatorVisible = false;
-  }
-
-  function showChatGPT(mode: "chat" | "summarize" = "chat") {
-    isChatGPTVisible = true;
-    isAIMenuOpen = false;
-    chatGPTMode = mode;
-
-    // Get selected text if any
-    const selection = window.getSelection ? window.getSelection() : null;
-    if (selection) {
-      selectedText = selection.toString() || currentContent;
-    } else {
-      selectedText = currentContent;
-    }
-  }
-
-  function hideChatGPT() {
-    isChatGPTVisible = false;
-  }
 
   function toggleCloudMenu() {
     isCloudMenuOpen = !isCloudMenuOpen;
@@ -172,22 +109,6 @@
   // Close menus when clicking outside
   function handleClickOutside(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    if (
-      isLanguageMenuOpen &&
-      !target.closest(".language-button") &&
-      !target.closest(".language-menu")
-    ) {
-      isLanguageMenuOpen = false;
-    }
-
-    if (
-      isAIMenuOpen &&
-      !target.closest(".ai-button") &&
-      !target.closest(".ai-menu")
-    ) {
-      isAIMenuOpen = false;
-    }
-
     if (
       isCloudMenuOpen &&
       !target.closest(".cloud-button") &&
@@ -206,20 +127,6 @@
 
     // Only handle global shortcuts if not in an input/textarea
     if (!isEditing) {
-      // Ctrl+Shift+G: Open ChatGPT Chat with selected text
-      if (event.ctrlKey && event.shiftKey && event.key === "G") {
-        event.preventDefault();
-        showChatGPT("chat");
-        return;
-      }
-
-      // Ctrl+Shift+S: Summarize with ChatGPT
-      if (event.ctrlKey && event.shiftKey && event.key === "S") {
-        event.preventDefault();
-        showChatGPT("summarize");
-        return;
-      }
-
       // Ctrl+Shift+B: Create backup
       if (event.ctrlKey && event.shiftKey && event.key === "B") {
         event.preventDefault();
@@ -243,12 +150,6 @@
 
   onMount(() => {
     const initialize = async () => {
-      // Load language services configuration
-      await loadLanguageServicesConfig();
-
-      // Load ChatGPT configuration
-      await loadChatGPTConfig();
-
       // Initialize Nextcloud sync
       await initSync();
 
@@ -323,44 +224,6 @@
       </div>
     {/if}
 
-    <!-- AI menu dropdown -->
-    <div class="relative">
-      <button
-        class="ai-button flex items-center justify-center px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 transition-colors"
-        on:click|stopPropagation={toggleAIMenu}
-        title="AI Tools"
-      >
-        <span>AI</span>
-      </button>
-
-      {#if isAIMenuOpen}
-        <div
-          class="ai-menu absolute bottom-10 right-0 bg-white dark:bg-gray-800 rounded-md shadow-lg w-56 py-1 z-50 animate-fadeIn"
-        >
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={() => showChatGPT("chat")}
-          >
-            <FontAwesomeIcon
-              icon="robot"
-              class="text-gray-500 dark:text-gray-400"
-            />
-            <span>Chat with ChatGPT</span>
-          </button>
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={() => showChatGPT("summarize")}
-          >
-            <FontAwesomeIcon
-              icon="robot"
-              class="text-gray-500 dark:text-gray-400"
-            />
-            <span>Summarize with ChatGPT</span>
-          </button>
-        </div>
-      {/if}
-    </div>
-
     <div class="relative">
       <button
         class="cloud-button w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -433,44 +296,6 @@
       {/if}
     </div>
 
-    <!-- Language Tools dropdown -->
-    <div class="relative">
-      <button
-        class="language-button w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-        on:click|stopPropagation={toggleLanguageMenu}
-        title="Language Tools"
-      >
-        <FontAwesomeIcon icon="language" />
-      </button>
-
-      {#if isLanguageMenuOpen}
-        <div
-          class="language-menu absolute bottom-10 right-0 bg-white dark:bg-gray-800 rounded-md shadow-lg w-56 py-1 z-50 animate-fadeIn"
-        >
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={showGrammarChecker}
-          >
-            <FontAwesomeIcon
-              icon="check-circle"
-              class="text-gray-500 dark:text-gray-400"
-            />
-            <span>Grammar Checker</span>
-          </button>
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={showTranslator}
-          >
-            <FontAwesomeIcon
-              icon="exchange-alt"
-              class="text-gray-500 dark:text-gray-400"
-            />
-            <span>Translator</span>
-          </button>
-        </div>
-      {/if}
-    </div>
-
     <!-- Help button -->
     <button
       class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -509,35 +334,6 @@
 </footer>
 
 <Help bind:this={helpComponent} />
-
-<!-- Grammar checker panel -->
-{#if isGrammarCheckerVisible}
-  <GrammarChecker onClose={hideGrammarChecker} />
-{/if}
-
-<!-- Translator panel -->
-{#if isTranslatorVisible}
-  <Translator
-    onClose={() => {
-      hideTranslator();
-      console.log("markdownEditorRef", markdownEditorRef);
-      if (markdownEditorRef) markdownEditorRef.reloadContentFromStore();
-    }}
-  />
-{/if}
-
-<!-- ChatGPT panel -->
-{#if isChatGPTVisible}
-  <ChatGPT
-    onClose={() => {
-      hideChatGPT();
-      console.log("markdownEditorRef", markdownEditorRef);
-      if (markdownEditorRef) markdownEditorRef.reloadContentFromStore();
-    }}
-    initialText={selectedText}
-    mode={chatGPTMode}
-  />
-{/if}
 
 <style>
   /* Custom animation for dropdown menus */

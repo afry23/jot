@@ -8,6 +8,7 @@
     defaultMarkdownSerializer,
   } from "prosemirror-markdown";
   import { buildInputRules, buildKeymap } from "prosemirror-example-setup";
+  import { liftListItem, sinkListItem } from "prosemirror-schema-list";
   import { keymap } from "prosemirror-keymap";
   import { baseKeymap } from "prosemirror-commands";
   import { dropCursor } from "prosemirror-dropcursor";
@@ -103,17 +104,17 @@
 
   // Track tab changes and update editor content accordingly
   $: if ($activeTab !== previousTab && editorReady) {
-  // Save current content before switching tabs
-  if (currentView && previousTab >= 0) {
-    const currentContent = currentView.content;
-    if (currentContent !== $notes[previousTab]) {
-      updateNote(previousTab, currentContent);
+    // Save current content before switching tabs
+    if (currentView && previousTab >= 0) {
+      const currentContent = currentView.content;
+      if (currentContent !== $notes[previousTab]) {
+        updateNote(previousTab, currentContent);
+      }
     }
+
+    previousTab = $activeTab;
+    updateEditorContent();
   }
-  
-  previousTab = $activeTab;
-  updateEditorContent();
-}
 
   async function openUrl(url: string) {
     try {
@@ -167,7 +168,7 @@
   async function updateEditorContent() {
     updateVersion += 1;
     const thisVersion = updateVersion;
-    const tabIndex = $activeTab; 
+    const tabIndex = $activeTab;
 
     if ($notes[tabIndex] !== undefined) {
       currentContent = $notes[tabIndex] || "";
@@ -193,8 +194,8 @@
 
       await tick(); // Ensure DOM is updated before creating new view
 
-       if (thisVersion !== updateVersion) return;
-       if (tabIndex !== $activeTab) return;
+      if (thisVersion !== updateVersion) return;
+      if (tabIndex !== $activeTab) return;
 
       // Create a new view with the latest content
       const ViewClass =
@@ -240,22 +241,22 @@
 
   // Handle content changes and save to store
   function handleContentChange() {
-  if (!currentView || !editorReady) return;
+    if (!currentView || !editorReady) return;
 
-  const newContent = currentView.content;
+    const newContent = currentView.content;
 
-  // Only update if content actually changed and we're still on the same tab
-  if (newContent !== $notes[$activeTab] && $activeTab === previousTab) {
-    // Update the notes store
-    updateNote($activeTab, newContent);
+    // Only update if content actually changed and we're still on the same tab
+    if (newContent !== $notes[$activeTab] && $activeTab === previousTab) {
+      // Update the notes store
+      updateNote($activeTab, newContent);
 
-    // Save note to persistent storage if needed
-    if (newContent !== lastSavedContent) {
-      saveNote($activeTab, newContent);
-      lastSavedContent = newContent;
+      // Save note to persistent storage if needed
+      if (newContent !== lastSavedContent) {
+        saveNote($activeTab, newContent);
+        lastSavedContent = newContent;
+      }
     }
   }
-}
 
   function handleUndo() {
     console.log("Handling undo for tab:", $activeTab);
@@ -377,6 +378,7 @@
       ctrlKey: any;
       key: string;
       preventDefault: () => void;
+      shiftKey: any;
     }) {
       // Check for Mod key (Cmd on Mac, Ctrl on Windows)
       const isMod = event.metaKey || event.ctrlKey;
@@ -417,9 +419,147 @@
         // Add a template for link insertion in the format [text](url)
         this.insertLinkTemplate();
         return true;
+      } else if (event.key === "Tab") {
+        console.log("Tab key pressed in MarkdownView");
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          // Try to lift (unindent) list item
+          return this.liftListItem();
+        } else {
+          // Try to sink (indent) list item
+          return this.sinkListItem();
+        }
       }
       return false;
     }
+
+    sinkListItem(): boolean {
+      const { selectionStart, value } = this.textarea;
+      const lines = value.split("\n");
+
+      // Find the line containing the cursor
+      let currentPos = 0;
+      let currentLineIndex = -1;
+
+      for (let i = 0; i < lines.length; i++) {
+        const lineEnd = currentPos + lines[i].length;
+        if (selectionStart >= currentPos && selectionStart <= lineEnd) {
+          currentLineIndex = i;
+          break;
+        }
+        currentPos = lineEnd + 1;
+      }
+
+      if (currentLineIndex === -1) return false;
+
+      const currentLine = lines[currentLineIndex];
+
+      // Check if current line is a list item
+      const listItemRegex = /^(\s*)(-|\d+\.)\s(.*)$/;
+      const match = currentLine.match(listItemRegex);
+
+      if (match) {
+        console.log("Found list item, sinking (indenting)");
+
+        // Add 4 spaces before the existing content
+        lines[currentLineIndex] = "    " + currentLine;
+
+        const newValue = lines.join("\n");
+        this.textarea.value = newValue;
+
+        // Adjust cursor position (add 4 spaces)
+        const newCursorPos = selectionStart + 4;
+        this.textarea.selectionStart = this.textarea.selectionEnd =
+          newCursorPos;
+
+        handleContentChange();
+        this.saveCursorPosition();
+        return true;
+      } else {
+        // Not a list item, insert 4 spaces at cursor
+        console.log("Not a list item, inserting spaces at cursor");
+        const before = value.substring(0, selectionStart);
+        const after = value.substring(selectionStart);
+        const newValue = before + "    " + after;
+
+        this.textarea.value = newValue;
+        this.textarea.selectionStart = this.textarea.selectionEnd =
+          selectionStart + 4;
+
+        handleContentChange();
+        this.saveCursorPosition();
+        return true;
+      }
+    }
+
+    liftListItem(): boolean {
+      const { selectionStart, value } = this.textarea;
+      const lines = value.split("\n");
+
+      // Find the line containing the cursor
+      let currentPos = 0;
+      let currentLineIndex = -1;
+
+      for (let i = 0; i < lines.length; i++) {
+        const lineEnd = currentPos + lines[i].length;
+        if (selectionStart >= currentPos && selectionStart <= lineEnd) {
+          currentLineIndex = i;
+          break;
+        }
+        currentPos = lineEnd + 1;
+      }
+
+      if (currentLineIndex === -1) return false;
+
+      const currentLine = lines[currentLineIndex];
+
+      // Check if current line is a list item with indentation
+      const listItemRegex = /^(\s*)(-|\d+\.)\s(.*)$/;
+      const match = currentLine.match(listItemRegex);
+
+      if (match && match[1].length >= 4) {
+        console.log("Found indented list item, lifting (unindenting)");
+
+        // Remove 4 spaces from the beginning
+        lines[currentLineIndex] = currentLine.substring(4);
+
+        const newValue = lines.join("\n");
+        this.textarea.value = newValue;
+
+        // Adjust cursor position (subtract 4 spaces)
+        const newCursorPos = Math.max(selectionStart - 4, currentPos);
+        this.textarea.selectionStart = this.textarea.selectionEnd =
+          newCursorPos;
+
+        handleContentChange();
+        this.saveCursorPosition();
+        return true;
+      } else if (!match) {
+        // Not a list item, try to remove 4 spaces before cursor
+        console.log("Not a list item, trying to remove spaces before cursor");
+        const before = value.substring(0, selectionStart);
+        if (before.endsWith("    ")) {
+          const newBefore = before.substring(0, before.length - 4);
+          const after = value.substring(selectionStart);
+          const newValue = newBefore + after;
+
+          this.textarea.value = newValue;
+          this.textarea.selectionStart = this.textarea.selectionEnd =
+            selectionStart - 4;
+
+          handleContentChange();
+          this.saveCursorPosition();
+          return true;
+        }
+        return false;
+      } else {
+        // List item with no indentation to remove
+        console.log("List item has no indentation to remove");
+        return false;
+      }
+    }
+
     insertLinkTemplate() {
       const { selectionStart, selectionEnd, value } = this.textarea;
       const selectedText =
@@ -537,8 +677,6 @@
       const plugins = [
         buildInputRules(schema),
         history(),
-        keymap(buildKeymap(schema)),
-        keymap(baseKeymap),
         keymap({
           "Mod-b": (state, dispatch) => {
             const { from, to } = state.selection;
@@ -610,15 +748,36 @@
               second: "2-digit",
             });
             // Insert as bold markdown (like MarkdownView)
-            const timestamp = `**${formattedDate}** `;
-            dispatch(
-              state.tr.insertText(
-                timestamp,
-                state.selection.from,
-                state.selection.to
-              )
-            );
+            const timestamp = `${formattedDate} `;
+            const { from, to } = state.selection;
+            // Insert the text and apply bold mark
+            const tr = state.tr
+              .insertText(timestamp, from, to)
+              .addMark(
+                from,
+                from + timestamp.length,
+                schema.marks.strong.create()
+              );
+            dispatch(tr);
             return true;
+          },
+          Tab: (state, dispatch) => {
+            console.log("Tab key pressed in ProseMirrorView");
+            // Try to sink (indent) list item first
+            if (sinkListItem(schema.nodes.list_item)(state, dispatch)) {
+              return true;
+            }
+            // If not in a list item, fall back to inserting spaces
+            if (dispatch) {
+              const tr = state.tr.insertText("    ", state.selection.from);
+              dispatch(tr);
+            }
+            return true;
+          },
+          "Shift-Tab": (state, dispatch) => {
+            console.log("Shift-Tab key pressed in ProseMirrorView");
+            // Try to lift (unindent) list item
+            return liftListItem(schema.nodes.list_item)(state, dispatch);
           },
           "Mod-z": (state, dispatch) => {
             return undo(state, dispatch);
@@ -630,6 +789,8 @@
             return require("prosemirror-history").redo(state, dispatch);
           },
         }),
+        keymap(buildKeymap(schema)),
+        keymap(baseKeymap),
         dropCursor(),
         gapCursor(),
       ];
@@ -834,27 +995,30 @@
     const handleSaveContentEvent = async (event: Event) => {
       const customEvent = event as CustomEvent<{ newTabIndex: number }>;
       const { newTabIndex } = customEvent.detail;
-      
+
       // Save current content first
       if (currentView) {
         const currentContent = currentView.content;
-        const currentStoreContent = $notes[$activeTab] || '';
-        
+        const currentStoreContent = $notes[$activeTab] || "";
+
         if (currentContent !== currentStoreContent) {
           updateNote($activeTab, currentContent);
           await saveNote($activeTab, currentContent);
         }
       }
-      
+
       // Now it's safe to switch tabs
       await setActiveTab(newTabIndex);
     };
 
-    window.addEventListener('save-current-content', handleSaveContentEvent);
+    window.addEventListener("save-current-content", handleSaveContentEvent);
 
     // Return cleanup function
     return () => {
-      window.removeEventListener('save-current-content', handleSaveContentEvent);
+      window.removeEventListener(
+        "save-current-content",
+        handleSaveContentEvent
+      );
       if (currentView) {
         currentView.destroy();
         currentView = null;

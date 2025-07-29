@@ -11,10 +11,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::{App, AppHandle, Manager};
 
 mod backup_service;
-mod chatgpt_service;
 mod credential_manager;
-mod language_services;
-mod logging;
+    mod logging;
 mod nextcloud;
 mod storage_service;
 mod sync_service; // Add the sync service module
@@ -251,16 +249,6 @@ pub fn run() {
             save_active_tab,
             load_notes,
             close_window,
-            // Language services
-            language_services::check_grammar,
-            language_services::translate_text,
-            language_services::save_language_tool_config,
-            language_services::save_deepl_config,
-            language_services::get_language_services_config,
-            // ChatGPT services
-            chatgpt_service::chat_with_gpt,
-            chatgpt_service::get_chatgpt_config_command,
-            chatgpt_service::save_chatgpt_config_command,
             // Nextcloud sync services
             nextcloud::commands::save_nextcloud_config_command,
             nextcloud::commands::get_nextcloud_config_command,
