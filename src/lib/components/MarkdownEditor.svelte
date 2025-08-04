@@ -986,7 +986,7 @@
   // Initialize the editor when component mounts
   onMount(() => {
     // Set up initial view
-    switchView("prosemirror");
+    switchView("markdown");
 
     // Set editor as ready
     editorReady = true;
