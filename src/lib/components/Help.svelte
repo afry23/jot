@@ -72,19 +72,17 @@
 
       <div class="help-section">
         <h3>Features</h3>
-        <ul
-          class="list-disc pl-5 text-gray-600 dark:text-gray-400 space-y-1"
-        >
+        <ul class="list-disc pl-5 text-gray-600 dark:text-gray-400 space-y-1">
           <li>Seven color-coded tabs for quick note organization</li>
           <li>Markdown support for basic formatting</li>
           <li>Dark and light themes</li>
           <li>Automatic saving</li>
-          <li>Nextcloud sync for cross-device access</li>
+          <li>Webdav sync for cross-device access</li>
           <li>Backup and restore capability</li>
         </ul>
       </div>
 
-        <div class="about-section">
+      <div class="about-section">
         <h3>About Jot</h3>
         <p>
           A minimal note-taking app for quick thoughts and ideas. Organize your

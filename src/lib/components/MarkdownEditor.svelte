@@ -129,7 +129,7 @@
   }
 
   function handleLinkModalSubmit(
-    event: CustomEvent<{ href: string; text: string }>
+    event: CustomEvent<{ href: string; text: string }>,
   ) {
     showLinkModal = false;
     if (!linkModalSelection || !proseMirrorViewRef) return;
@@ -144,14 +144,14 @@
       tr = tr.insertText(text, from, to);
       tr = tr.addMark(from, from + text.length, linkType.create({ href }));
       tr = tr.setSelection(
-        TextSelection.create(tr.doc, from, from + text.length)
+        TextSelection.create(tr.doc, from, from + text.length),
       );
     } else {
       // Replace selected text with new text and link
       tr = tr.insertText(text, from, to);
       tr = tr.addMark(from, from + text.length, linkType.create({ href }));
       tr = tr.setSelection(
-        TextSelection.create(tr.doc, from, from + text.length)
+        TextSelection.create(tr.doc, from, from + text.length),
       );
     }
     view.dispatch(tr);
@@ -610,7 +610,7 @@
           newText,
           selectionStart,
           selectionEnd,
-          "end"
+          "end",
         );
 
         if (selectionStart === selectionEnd) {
@@ -756,7 +756,7 @@
               .addMark(
                 from,
                 from + timestamp.length,
-                schema.marks.strong.create()
+                schema.marks.strong.create(),
               );
             dispatch(tr);
             return true;
@@ -807,7 +807,7 @@
           if (node && node.isText) {
             const marks = node.marks;
             const linkMark = marks.find(
-              (mark) => mark.type === schema.marks.link
+              (mark) => mark.type === schema.marks.link,
             );
 
             if (linkMark) {
@@ -836,7 +836,7 @@
 
       this.container.addEventListener(
         "click",
-        this.handleContainerClick.bind(this)
+        this.handleContainerClick.bind(this),
       );
 
       // Add DOM event listener for content changes
@@ -865,7 +865,7 @@
 
       // Add scroll listener to the container
       this.container.addEventListener("scroll", () =>
-        this.saveScrollPosition()
+        this.saveScrollPosition(),
       );
     }
 
@@ -917,11 +917,11 @@
       try {
         const resolvedPos = Math.min(
           position,
-          this.view.state.doc.content.size
+          this.view.state.doc.content.size,
         );
         const selection = TextSelection.create(
           this.view.state.doc,
-          resolvedPos
+          resolvedPos,
         );
         const transaction = this.view.state.tr.setSelection(selection);
         this.view.dispatch(transaction);
@@ -1017,7 +1017,7 @@
     return () => {
       window.removeEventListener(
         "save-current-content",
-        handleSaveContentEvent
+        handleSaveContentEvent,
       );
       if (currentView) {
         currentView.destroy();
@@ -1150,6 +1150,7 @@
     box-sizing: border-box;
   }
 
+  /* Test
   :global(.ProseMirror h1) {
     font-size: 1.8em;
     font-weight: bold;
@@ -1193,7 +1194,7 @@
     color: var(--h6-color);
     margin: 16px 0 8px 0;
   }
-
+  */
   :global(.ProseMirror p) {
     margin: 10px 0;
     color: inherit;
@@ -1225,6 +1226,7 @@
     display: list-item;
   }
 
+  /*
   :global(.ProseMirror blockquote) {
     border-left: 4px solid var(--tab-color, #007acc);
     padding-left: 16px;
@@ -1235,6 +1237,7 @@
     padding: 12px 16px;
     border-radius: 0 4px 4px 0;
   }
+  */
 
   :global(.ProseMirror code) {
     background-color: var(--code-background);
