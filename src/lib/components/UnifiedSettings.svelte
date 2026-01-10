@@ -11,7 +11,6 @@
   import Button from "./Button.svelte";
   import BackupSettings from "./BackupSettings.svelte";
   import LogSettings from "./LogSettings.svelte";
-  import NextcloudSettings from "./NextcloudSettings.svelte";
   import StorageSettings from "./StorageSettings.svelte";
 
   // Font size options
@@ -25,7 +24,6 @@
   type SettingsTab =
     | "appearance"
     | "storage"
-    | "nextcloud"
     | "backups"
     | "about"
     | "logs";
@@ -64,17 +62,6 @@
           <FontAwesomeIcon icon="folder" class="sidebar-icon" />
         </div>
         <span>Storage</span>
-      </button>
-
-      <button
-        class="sidebar-tab"
-        class:active={activeTab === "nextcloud"}
-        on:click={() => setActiveTab("nextcloud")}
-      >
-        <div class="sidebar-icon">
-          <FontAwesomeIcon icon="cloud" class="sidebar-icon" />
-        </div>
-        <span>Nextcloud</span>
       </button>
 
       <button
@@ -159,13 +146,6 @@
     {#if activeTab === "storage"}
       <div class="tab-content">
         <StorageSettings />
-      </div>
-    {/if}
-
-    <!-- Nextcloud tab -->
-    {#if activeTab === "nextcloud"}
-      <div class="tab-content">
-        <NextcloudSettings />
       </div>
     {/if}
 

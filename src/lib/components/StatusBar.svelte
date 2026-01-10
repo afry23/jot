@@ -1,13 +1,5 @@
 <script lang="ts">
   import { createBackup, loadBackups } from "$lib/stores/backupStore";
-  import {
-    downloadAllNotes,
-    initSync,
-    isSyncing,
-    showSyncStatus,
-    triggerSync,
-    uploadAllNotes,
-  } from "$lib/stores/nextcloudSync";
   import { notes } from "$lib/stores/notes";
   import { theme, toggleTheme } from "$lib/stores/settings";
   import { activeTab } from "$lib/stores/tabs";
@@ -20,17 +12,14 @@
     countWords,
   } from "$lib/utils/textFormatting";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-  import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
   import "../fa-icons";
   import BackupStatus from "./BackupStatus.svelte";
   import Help from "./Help.svelte";
   import Modal from "./Modal.svelte";
-  import SyncIndicator from "./SyncIndicator.svelte";
 
   export let markdownEditorRef;
   export let showBackupStatus: boolean = false; // Prop to control backup status visibility
-  let syncOperation: "sync" | "upload" | "download" = "sync";
 
   // Calculate text statistics
   $: currentContent = $notes[$activeTab] || "";
@@ -49,72 +38,10 @@
   // Reference to components
   let helpComponent: Help;
   let settingsModal: Modal;
-  let isCloudMenuOpen = false;
-
-  // Language menu state
-  let isLanguageMenuOpen = false;
-  // AI menu state
-  let isAIMenuOpen = false;
 
   function openHelp() {
     if (helpComponent) {
       helpComponent.open();
-    }
-  }
-
-  function syncNow() {
-    isCloudMenuOpen = false;
-    syncOperation = "sync";
-    triggerSync()
-      .then(() => {
-        console.log("Sync triggered successfully");
-      })
-      .catch((error) => {
-        console.error("Error triggering sync:", error);
-      });
-  }
-
-  function uploadNotes() {
-    isCloudMenuOpen = false;
-    syncOperation = "upload";
-    uploadAllNotes()
-      .then(() => {
-        console.log("Upload triggered successfully");
-      })
-      .catch((error) => {
-        console.error("Error triggering upload:", error);
-      });
-  }
-
-  function downloadNotes() {
-    isCloudMenuOpen = false;
-    syncOperation = "download";
-    downloadAllNotes()
-      .then(() => {
-        console.log("Download triggered successfully");
-      })
-      .catch((error) => {
-        console.error("Error triggering download:", error);
-      });
-  }
-
-  function toggleCloudMenu() {
-    isCloudMenuOpen = !isCloudMenuOpen;
-    if (isCloudMenuOpen) {
-      isLanguageMenuOpen = false;
-      isAIMenuOpen = false;
-    }
-  }
-
-  // Close menus when clicking outside
-  function handleClickOutside(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (
-      isCloudMenuOpen &&
-      !target.closest(".cloud-button") &&
-      !target.closest(".cloud-menu")
-    ) {
-      isCloudMenuOpen = false;
     }
   }
 
@@ -139,7 +66,6 @@
   // Create a manual backup and update status
   async function createManualBackup() {
     try {
-      isCloudMenuOpen = false;
       await createBackup();
       const timestamp = Date.now();
       localStorage.setItem("jot-last-backup-time", timestamp.toString());
@@ -150,38 +76,16 @@
 
   onMount(() => {
     const initialize = async () => {
-      // Initialize Nextcloud sync
-      await initSync();
-
       // Load existing backups
       await loadBackups();
     };
 
     initialize();
 
-    const setupSyncListeners = async () => {
-      await listen("sync-started", (event) => {
-        const operation = event.payload as string;
-        if (operation === "upload") {
-          syncOperation = "upload";
-        } else if (operation === "download") {
-          syncOperation = "download";
-        } else {
-          syncOperation = "sync";
-        }
-      });
-    };
-
-    setupSyncListeners();
-
-    // Add click outside handler for menus
-    document.addEventListener("click", handleClickOutside);
-
     // Add keyboard shortcut handler
     document.addEventListener("keydown", handleKeydown);
 
     return () => {
-      document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleKeydown);
     };
   });
@@ -217,84 +121,15 @@
         <BackupStatus compact={true} />
       </div>
     {/if}
-    <!-- Sync status -->
-    {#if $showSyncStatus}
-      <div class="hidden md:flex items-center">
-        <SyncIndicator />
-      </div>
-    {/if}
 
-    <div class="relative">
-      <button
-        class="cloud-button w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-        on:click|stopPropagation={toggleCloudMenu}
-        title="Sync & Backup"
-      >
-        <FontAwesomeIcon
-          icon={$isSyncing ? "sync" : "cloud"}
-          spin={$isSyncing}
-        />
-      </button>
-
-      {#if isCloudMenuOpen}
-        <div
-          class="cloud-menu absolute bottom-10 right-0 bg-white dark:bg-gray-800 rounded-md shadow-lg w-56 py-1 z-50 animate-fadeIn"
-        >
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={() => syncNow()}
-            disabled={$isSyncing}
-          >
-            <FontAwesomeIcon
-              icon="sync"
-              class="text-gray-500 dark:text-gray-400"
-              spin={$isSyncing}
-            />
-            <span>{$isSyncing ? "Syncing..." : "Sync Now"}</span>
-          </button>
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={downloadNotes}
-          >
-            <FontAwesomeIcon
-              icon="cloud-download-alt"
-              class="text-gray-500 dark:text-gray-400"
-              spin={$isSyncing && syncOperation === "download"}
-            />
-            <span
-              >{$isSyncing && syncOperation === "download"
-                ? "Downloading..."
-                : "Download All Notes"}</span
-            >
-          </button>
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={uploadNotes}
-          >
-            <FontAwesomeIcon
-              icon="cloud-upload-alt"
-              class="text-gray-500 dark:text-gray-400"
-              spin={$isSyncing && syncOperation === "upload"}
-            />
-            <span
-              >{$isSyncing && syncOperation === "sync"
-                ? "Uploading..."
-                : "Upload All Notes"}</span
-            >
-          </button>
-          <button
-            class="menu-item w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            on:click={createManualBackup}
-          >
-            <FontAwesomeIcon
-              icon="save"
-              class="text-gray-500 dark:text-gray-400"
-            />
-            <span>Create Backup</span>
-          </button>
-        </div>
-      {/if}
-    </div>
+    <!-- Backup button -->
+    <button
+      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+      on:click={createManualBackup}
+      title="Create Backup (Ctrl+Shift+B)"
+    >
+      <FontAwesomeIcon icon="save" />
+    </button>
 
     <!-- Help button -->
     <button
