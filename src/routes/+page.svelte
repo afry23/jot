@@ -10,8 +10,6 @@
   import "../app.css";
   import { setupKeyboardShortcuts } from "$lib/stores/keyboardShortcuts";
   import { initializeHistory } from "$lib/stores/history";
-  import { initSync } from "$lib/stores/nextcloudSync";
-  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { logger } from "$lib/utils/logger";
   import { Window } from "@tauri-apps/api/window";
   import "prosemirror-view/style/prosemirror.css";
@@ -33,9 +31,6 @@
         // Then load notes content
         logger.info("Loading notes");
         await loadNotes();
-        // Initialize Nextcloud sync
-        logger.info("Initializing Nextcloud sync");
-        await initSync();
         initializeHistory($notes);
       } catch (error) {
         logger.error("Failed to load application data:", error);
@@ -51,19 +46,6 @@
     setupKeyboardShortcuts().then((cleanup) => {
       cleanupShortcuts = cleanup;
     });
-
-    const unlisten: UnlistenFn[] = [];
-    const setupListeners = async () => {
-      for (let i = 0; i <= 6; i++) {
-        const unlistenFn = await listen(`note-updated-${i}`, (event) => {
-          console.log(`Received note update for tab ${i} via sync`);
-          // Update the store with the new content
-          updateNote(i, event.payload as string);
-        });
-        unlisten.push(unlistenFn);
-      }
-    };
-    setupListeners();
 
     Window.getCurrent().onFocusChanged(async (event) => {
       if (event.event) {

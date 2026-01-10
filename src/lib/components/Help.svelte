@@ -77,7 +77,6 @@
           <li>Markdown support for basic formatting</li>
           <li>Dark and light themes</li>
           <li>Automatic saving</li>
-          <li>Webdav sync for cross-device access</li>
           <li>Backup and restore capability</li>
         </ul>
       </div>

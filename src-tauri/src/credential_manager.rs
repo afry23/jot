@@ -3,7 +3,6 @@ use log::debug;
 use tauri::{command, AppHandle};
 
 // Service names for different credential types
-const NEXTCLOUD_SERVICE: &str = "jot.nextcloud";
 const LANGUAGETOOL_SERVICE: &str = "jot.languagetool";
 const DEEPL_SERVICE: &str = "jot.deepl";
 const CHATGPT_SERVICE: &str = "jot.chatgpt";
@@ -81,25 +80,6 @@ pub fn delete_credential(service: &str, username: &str) -> Result<(), String> {
 }
 
 // Tauri commands for frontend interaction
-#[command]
-pub fn store_nextcloud_credential(username: String, password: String) -> Result<(), String> {
-    // Check if the password is empty
-    if password.is_empty() {
-        return Err("Password cannot be empty".to_string());
-    }
-    store_credential(NEXTCLOUD_SERVICE, &username, &password)
-}
-
-#[command]
-pub fn get_nextcloud_credential(username: String) -> Result<String, String> {
-    get_credential(NEXTCLOUD_SERVICE, &username)
-}
-
-#[command]
-pub fn delete_nextcloud_credential(username: String) -> Result<(), String> {
-    delete_credential(NEXTCLOUD_SERVICE, &username)
-}
-
 #[command]
 pub fn store_languagetool_credential(username: String, api_key: String) -> Result<(), String> {
     store_credential(LANGUAGETOOL_SERVICE, &username, &api_key)

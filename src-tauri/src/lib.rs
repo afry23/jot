@@ -13,9 +13,7 @@ use tauri::{App, AppHandle, Manager};
 mod backup_service;
 mod credential_manager;
     mod logging;
-mod nextcloud;
 mod storage_service;
-mod sync_service; // Add the sync service module
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct AppSettings {
@@ -238,8 +236,6 @@ pub fn run() {
             logging::init_logger(app.app_handle())?;
             info!("Jot application starting up");
             configure_tray_menu(app).unwrap();
-            // Initialize the sync service
-            sync_service::init_sync_service(app)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -249,17 +245,6 @@ pub fn run() {
             save_active_tab,
             load_notes,
             close_window,
-            // Nextcloud sync services
-            nextcloud::commands::save_nextcloud_config_command,
-            nextcloud::commands::get_nextcloud_config_command,
-            nextcloud::commands::test_nextcloud_connection,
-            nextcloud::commands::sync_all_notes,
-            nextcloud::commands::get_sync_status,
-            nextcloud::commands::upload_all_notes,
-            nextcloud::commands::download_all_notes,
-            // Sync service commands
-            sync_service::trigger_sync_command,
-            sync_service::stop_sync_command,
             // Backup service commands
             backup_service::create_backup,
             backup_service::list_backups,
@@ -275,9 +260,6 @@ pub fn run() {
             logging::clear_logs,
             logging::set_log_level,
             logging::get_log_level,
-            credential_manager::store_nextcloud_credential,
-            credential_manager::get_nextcloud_credential,
-            credential_manager::delete_nextcloud_credential,
             credential_manager::store_languagetool_credential,
             credential_manager::get_languagetool_credential,
             credential_manager::has_languagetool_credential,
