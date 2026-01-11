@@ -69,7 +69,10 @@
     if (plainTextEditor && $activeTab !== undefined) {
       const position = plainTextEditor.selectionStart;
       cursorPositions.update((positions) => {
-        positions[$activeTab] = position;
+        if (!positions[$activeTab]) {
+          positions[$activeTab] = {};
+        }
+        positions[$activeTab]["edit"] = position;
         return positions;
       });
     }
@@ -79,7 +82,10 @@
   function saveScrollPosition() {
     if ($viewMode === "edit" && plainTextEditor && $activeTab !== undefined) {
       scrollPositions.update((positions) => {
-        positions[$activeTab] = plainTextEditor.scrollTop;
+        if (!positions[$activeTab]) {
+          positions[$activeTab] = {};
+        }
+        positions[$activeTab]["edit"] = plainTextEditor.scrollTop;
         return positions;
       });
     } else if (
@@ -88,7 +94,10 @@
       $activeTab !== undefined
     ) {
       scrollPositions.update((positions) => {
-        positions[$activeTab] = previewContainer.scrollTop;
+        if (!positions[$activeTab]) {
+          positions[$activeTab] = {};
+        }
+        positions[$activeTab]["preview"] = previewContainer.scrollTop;
         return positions;
       });
     }
@@ -553,7 +562,8 @@
     if ($notes[$activeTab] !== undefined) {
       // Reset cursor position to end of text for new tab
 
-      const storedCursorPosition = $cursorPositions[$activeTab];
+      const tabPositions = $cursorPositions[$activeTab] || {};
+      const storedCursorPosition = tabPositions["edit"];
       cursorPosition =
         storedCursorPosition !== undefined
           ? storedCursorPosition
@@ -562,7 +572,8 @@
             : 0;
 
       // Get stored scroll position for this tab or default to top
-      const storedScrollPosition = $scrollPositions[$activeTab];
+      const tabScrollPositions = $scrollPositions[$activeTab] || {};
+      const storedScrollPosition = tabScrollPositions[$viewMode];
       scrollTop = storedScrollPosition !== undefined ? storedScrollPosition : 0;
 
       // Update the UI
