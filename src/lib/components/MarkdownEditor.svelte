@@ -174,15 +174,17 @@
       currentContent = $notes[tabIndex] || "";
       lastSavedContent = currentContent;
 
-      // Get stored cursor position for this tab or default to end of text
-      const storedCursorPosition = $cursorPositions[$activeTab];
+      // Get stored cursor position for this tab and mode, or default to end of text
+      const tabPositions = $cursorPositions[$activeTab] || {};
+      const storedCursorPosition = tabPositions[viewMode];
       const newPosition =
         storedCursorPosition !== undefined
           ? storedCursorPosition
           : currentContent.length;
 
-      // Get stored scroll position
-      const storedScrollPosition = $scrollPositions[$activeTab];
+      // Get stored scroll position for this tab and mode
+      const tabScrollPositions = $scrollPositions[$activeTab] || {};
+      const storedScrollPosition = tabScrollPositions[viewMode];
       const newScrollTop =
         storedScrollPosition !== undefined ? storedScrollPosition : 0;
 
@@ -214,6 +216,120 @@
         }
       }, 50);
     }
+  }
+
+  // Convert markdown character position to text content offset (without markdown syntax)
+  function markdownPositionToTextOffset(markdownText: string, markdownPos: number): number {
+    // Parse the markdown up to the cursor position
+    const textUpToCursor = markdownText.substring(0, markdownPos);
+
+    // Parse it into a temporary ProseMirror document to get the text content
+    const tempDoc = defaultMarkdownParser.parse(textUpToCursor);
+    if (!tempDoc) return 0;
+
+    // Get the text content length (this removes markdown syntax)
+    return tempDoc.textContent.length;
+  }
+
+  // Convert text content offset to markdown character position
+  function textOffsetToMarkdownPosition(markdownText: string, textOffset: number): number {
+    // We need to find the position in markdown where we have textOffset characters of content
+    let contentLength = 0;
+    let markdownPos = 0;
+
+    // Parse the full markdown to track content
+    const fullDoc = defaultMarkdownParser.parse(markdownText);
+    if (!fullDoc) return 0;
+
+    const fullTextContent = fullDoc.textContent;
+
+    // If the offset is beyond the content, return the end
+    if (textOffset >= fullTextContent.length) {
+      return markdownText.length;
+    }
+
+    // Binary search-like approach: try parsing progressively more markdown
+    // until we reach the desired text content length
+    for (let i = 0; i <= markdownText.length; i++) {
+      const partialMarkdown = markdownText.substring(0, i);
+      const partialDoc = defaultMarkdownParser.parse(partialMarkdown);
+      if (partialDoc) {
+        const partialTextLength = partialDoc.textContent.length;
+        if (partialTextLength >= textOffset) {
+          return i;
+        }
+      }
+    }
+
+    return markdownText.length;
+  }
+
+  // Convert ProseMirror position to text content offset
+  function prosemirrorPositionToTextOffset(view: ProseMirrorView): number {
+    if (!view || !(view instanceof ProseMirrorView)) return 0;
+
+    const pmView = (view as any).view as EditorView;
+    const pos = pmView.state.selection.head;
+
+    // Get text content up to the cursor position
+    const doc = pmView.state.doc;
+    let textOffset = 0;
+
+    // Walk through the document counting text content characters
+    doc.nodesBetween(0, Math.min(pos, doc.content.size), (node, nodePos) => {
+      if (nodePos >= pos) return false; // Stop if we've passed the cursor
+
+      if (node.isText) {
+        const textEnd = nodePos + node.nodeSize;
+        if (textEnd <= pos) {
+          // Entire text node is before cursor
+          textOffset += node.text?.length || 0;
+        } else {
+          // Cursor is within this text node
+          textOffset += pos - nodePos;
+        }
+      }
+      return true;
+    });
+
+    return textOffset;
+  }
+
+  // Convert text content offset to ProseMirror position
+  function textOffsetToProsemirrorPosition(view: ProseMirrorView, textOffset: number): number {
+    if (!view || !(view instanceof ProseMirrorView)) return 0;
+
+    const pmView = (view as any).view as EditorView;
+    const doc = pmView.state.doc;
+
+    let remainingOffset = textOffset;
+    let pmPosition = 0;
+
+    // Walk through the document to find where the text offset maps to
+    doc.descendants((node, pos) => {
+      if (remainingOffset <= 0) return false; // Found the position
+
+      if (node.isText) {
+        const textLength = node.text?.length || 0;
+        if (remainingOffset <= textLength) {
+          // The position is within this text node
+          pmPosition = pos + remainingOffset;
+          remainingOffset = 0;
+          return false;
+        } else {
+          // Continue past this text node
+          remainingOffset -= textLength;
+        }
+      }
+      return true;
+    });
+
+    // If we didn't find it, return the end of the document
+    if (remainingOffset > 0) {
+      pmPosition = doc.content.size;
+    }
+
+    return pmPosition;
   }
 
   // Implement cursor and scroll position application
@@ -358,7 +474,10 @@
       if (this.textarea && $activeTab !== undefined) {
         const position = this.textarea.selectionStart;
         cursorPositions.update((positions) => {
-          positions[$activeTab] = position;
+          if (!positions[$activeTab]) {
+            positions[$activeTab] = {};
+          }
+          positions[$activeTab]["markdown"] = position;
           return positions;
         });
       }
@@ -367,7 +486,10 @@
     saveScrollPosition(): void {
       if (this.textarea && $activeTab !== undefined) {
         scrollPositions.update((positions) => {
-          positions[$activeTab] = this.textarea.scrollTop;
+          if (!positions[$activeTab]) {
+            positions[$activeTab] = {};
+          }
+          positions[$activeTab]["markdown"] = this.textarea.scrollTop;
           return positions;
         });
       }
@@ -941,7 +1063,10 @@
         // Get the current selection's head position (cursor)
         const position = this.view.state.selection.head;
         cursorPositions.update((positions) => {
-          positions[$activeTab] = position;
+          if (!positions[$activeTab]) {
+            positions[$activeTab] = {};
+          }
+          positions[$activeTab]["prosemirror"] = position;
           return positions;
         });
       }
@@ -950,7 +1075,10 @@
     saveScrollPosition(): void {
       if (this.container && $activeTab !== undefined) {
         scrollPositions.update((positions) => {
-          positions[$activeTab] = this.container.scrollTop;
+          if (!positions[$activeTab]) {
+            positions[$activeTab] = {};
+          }
+          positions[$activeTab]["prosemirror"] = this.container.scrollTop;
           return positions;
         });
       }
@@ -961,9 +1089,26 @@
   function switchView(newMode: "markdown" | "prosemirror") {
     if (viewMode === newMode && currentView) return;
 
-    // Save current content
+    let textContentOffset = 0; // The cursor position in terms of actual text content
+
+    // Save current content and convert cursor position to text offset
     if (currentView) {
       currentContent = currentView.content;
+
+      // Get the current cursor position and convert it to text content offset
+      if (viewMode === "markdown" && currentView instanceof MarkdownView) {
+        // Get markdown cursor position
+        const markdownPos = (currentView as any).textarea?.selectionStart || 0;
+        // Convert to text content offset
+        textContentOffset = markdownPositionToTextOffset(currentContent, markdownPos);
+      } else if (viewMode === "prosemirror" && currentView instanceof ProseMirrorView) {
+        // Get text content offset from ProseMirror
+        textContentOffset = prosemirrorPositionToTextOffset(currentView);
+      }
+
+      // Save scroll position
+      currentView.saveScrollPosition();
+
       currentView.destroy();
       currentView = null;
     }
@@ -974,9 +1119,26 @@
       currentView = new ViewClass(editorContainer, currentContent);
       viewMode = newMode;
 
-      // Focus after another tick
+      // Restore cursor position by converting text offset to the new mode's position
       setTimeout(() => {
         if (currentView) {
+          let positionToApply = 0;
+
+          // Convert text content offset to the appropriate position for the new mode
+          if (newMode === "markdown" && currentView instanceof MarkdownView) {
+            // Convert text offset to markdown position
+            positionToApply = textOffsetToMarkdownPosition(currentContent, textContentOffset);
+          } else if (newMode === "prosemirror" && currentView instanceof ProseMirrorView) {
+            // Convert text offset to ProseMirror position
+            positionToApply = textOffsetToProsemirrorPosition(currentView, textContentOffset);
+          }
+
+          // Get saved scroll position
+          const tabScrollPositions = $scrollPositions[$activeTab] || {};
+          const savedScrollPosition = tabScrollPositions[newMode];
+          const scrollToApply = savedScrollPosition !== undefined ? savedScrollPosition : 0;
+
+          applyCursorAndScrollPosition(positionToApply, scrollToApply);
           currentView.focus();
         }
       }, 10);
