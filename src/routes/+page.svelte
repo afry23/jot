@@ -12,11 +12,8 @@
   import { initializeHistory } from "$lib/stores/history";
   import { logger } from "$lib/utils/logger";
   import { Window } from "@tauri-apps/api/window";
-  import "prosemirror-view/style/prosemirror.css";
 
   let loading = true;
-
-  let markdownEditorRef;
 
   // Load notes and settings on mount
   onMount(() => {
@@ -49,19 +46,10 @@
 
     Window.getCurrent().onFocusChanged(async (event) => {
       if (event.event) {
-        // Focus the editor when the window becomes visible or gets focus
+        // Focus the CodeMirror editor when the window becomes visible
         setTimeout(() => {
-          const editor = document.querySelector(
-            ".plain-text-editor",
-          ) as HTMLTextAreaElement;
-          if (editor) {
-            editor.focus();
-
-            // Position cursor at the end of text if needed
-            if (editor.value) {
-              editor.selectionStart = editor.selectionEnd = editor.value.length;
-            }
-          }
+          const editor = document.querySelector(".cm-content") as HTMLElement;
+          if (editor) editor.focus();
         }, 100);
       }
     });
@@ -69,7 +57,6 @@
     // Cleanup function
     return () => {
       if (cleanupShortcuts) cleanupShortcuts();
-      unlisten.forEach((fn) => fn());
     };
   });
 
@@ -98,10 +85,10 @@
         <p>Loading...</p>
       </div>
     {:else}
-      <EditorContainer bind:markdownEditorRef />
+      <EditorContainer />
     {/if}
   </main>
-  <StatusBar {markdownEditorRef} />
+  <StatusBar />
 </div>
 
 <style>

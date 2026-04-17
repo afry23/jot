@@ -1,5 +1,4 @@
 import { activeTab, setActiveTab } from "./tabs";
-import { toggleViewMode } from "./viewMode";
 import { toggleTheme } from "./settings";
 import { get } from "svelte/store";
 import { myredo, myundo } from "./history";
@@ -52,28 +51,8 @@ export async function setupKeyboardShortcuts() {
       event.preventDefault();
       const tabIndex = parseInt(event.key) - 1;
       if (tabIndex >= 0 && tabIndex <= 6) {
-        // Blur any focused editor elements to ensure content is saved properly
-        const activeElement = document.activeElement as HTMLElement;
-        if (
-          activeElement &&
-          (activeElement.classList.contains("markdown-textarea") ||
-            activeElement.classList.contains("ProseMirror"))
-        ) {
-          activeElement.blur();
-        }
-
-        // Small delay to ensure content is properly saved before switching
-        setTimeout(() => {
-          setActiveTab(tabIndex);
-        }, 10);
+        setActiveTab(tabIndex);
       }
-      return;
-    }
-
-    // Ctrl+E: Toggle edit/preview mode (works even when editing)
-    if (event.ctrlKey && event.key === "e") {
-      event.preventDefault();
-      toggleViewMode();
       return;
     }
 
