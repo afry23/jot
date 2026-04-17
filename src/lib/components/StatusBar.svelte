@@ -4,7 +4,6 @@
   import { theme, toggleTheme } from "$lib/stores/settings";
   import { activeTab } from "$lib/stores/tabs";
   import { activeTabBackground } from "$lib/stores/tabStyles";
-  import { toggleViewMode, viewMode } from "$lib/stores/viewMode";
   import { emptyTabColor, tabColors } from "$lib/utils/colors";
   import {
     countCharacters,
@@ -18,8 +17,7 @@
   import Help from "./Help.svelte";
   import Modal from "./Modal.svelte";
 
-  export let markdownEditorRef;
-  export let showBackupStatus: boolean = false; // Prop to control backup status visibility
+  export let showBackupStatus: boolean = false;
 
   // Calculate text statistics
   $: currentContent = $notes[$activeTab] || "";
@@ -138,19 +136,6 @@
       title="Help"
     >
       <FontAwesomeIcon icon="question" />
-    </button>
-
-    <!-- View mode toggle - Show either plain text or preview -->
-    <button
-      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-      on:click={toggleViewMode}
-      title="Toggle view mode (Ctrl+E)"
-    >
-      {#if $viewMode === "edit"}
-        <FontAwesomeIcon icon="eye" />
-      {:else}
-        <FontAwesomeIcon icon="edit" />
-      {/if}
     </button>
 
     <!-- Theme toggle -->
