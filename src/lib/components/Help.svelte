@@ -3,8 +3,14 @@
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import { shortcuts } from "../utils/shortcutsHelp";
   import "../fa-icons";
+  import { getVersion } from "@tauri-apps/api/app";
 
   let isOpen = false;
+  let appVersion = "";
+
+  onMount(async () => {
+    appVersion = await getVersion();
+  });
 
   // Markdown syntax help
   const markdownHelp = [
@@ -87,7 +93,7 @@
           A minimal note-taking app for quick thoughts and ideas. Organize your
           notes with color-coded tabs and simple markdown formatting.
         </p>
-        <p>Version 1.0.0</p>
+        <p>Version {appVersion}</p>
       </div>
 
       <div class="footer">

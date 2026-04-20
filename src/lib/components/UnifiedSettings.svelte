@@ -12,6 +12,13 @@
   import BackupSettings from "./BackupSettings.svelte";
   import LogSettings from "./LogSettings.svelte";
   import StorageSettings from "./StorageSettings.svelte";
+  import { getVersion } from "@tauri-apps/api/app";
+  import { onMount } from "svelte";
+
+  let appVersion = "";
+  onMount(async () => {
+    appVersion = await getVersion();
+  });
 
   // Font size options
   const fontSizeOptions: { value: FontSize; label: string }[] = [
@@ -176,7 +183,7 @@
             <p class="text-gray-600 dark:text-gray-400 mb-2">
               A minimal note-taking app for quick thoughts and ideas.
             </p>
-            <p class="text-gray-600 dark:text-gray-400">Version 1.0.0</p>
+            <p class="text-gray-600 dark:text-gray-400">Version {appVersion}</p>
           </div>
         </div>
       </div>
