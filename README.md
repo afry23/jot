@@ -28,22 +28,26 @@ Jot is a lightweight, minimalist note-taking application built with Tauri (Rust)
 ### Building from Source
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/afry23/jot.git
    cd jot
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
 
 3. Run in development mode:
+
    ```
    npm run tauri dev
    ```
 
 4. Build for production:
+
    ```
    npm run tauri build
    ```
@@ -136,3 +140,4 @@ This project is licensed under the GNU GPL Version 3 License - see the LICENSE f
 - Built with [Tauri](https://tauri.app/) and [Svelte](https://svelte.dev/)
 - Icon designs from [FontAwesome](https://fontawesome.com/)
 - App Icon [Sticky note icons created by Muhammad_Usman - Flaticon](https://www.flaticon.com/free-icons/sticky-note)
+
