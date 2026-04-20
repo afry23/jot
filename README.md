@@ -140,4 +140,3 @@ This project is licensed under the GNU GPL Version 3 License - see the LICENSE f
 - Built with [Tauri](https://tauri.app/) and [Svelte](https://svelte.dev/)
 - Icon designs from [FontAwesome](https://fontawesome.com/)
 - App Icon [Sticky note icons created by Muhammad_Usman - Flaticon](https://www.flaticon.com/free-icons/sticky-note)
-
