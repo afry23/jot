@@ -3,21 +3,20 @@ name: Build Windows
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
-
+    runs-on: [self-hosted, windows]
     steps:
       - uses: actions/checkout@v4
 
       - name: Node.js einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Rust einrichten
         uses: dtolnay/rust-toolchain@stable
@@ -25,7 +24,7 @@ jobs:
       - name: Rust-Cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Abhängigkeiten installieren
         run: npm ci
@@ -36,7 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Jot ${{ github.ref_name }}'
-          releaseBody: 'Windows-Build'
+          releaseName: "Jot ${{ github.ref_name }}"
+          releaseBody: "Windows-Build"
           releaseDraft: true
           prerelease: false
