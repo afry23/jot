@@ -37,4 +37,4 @@ jobs:
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if (-not $vs) { throw "Visual Studio Build Tools nicht gefunden." }
-          cmd /c "call `"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && where link && where cl && npm run tauri build"       uses: tauri-apps/tauri-action@v0
+          cmd /c "call `"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && where link && where cl && npm run tauri build"
