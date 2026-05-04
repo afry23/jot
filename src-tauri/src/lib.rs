@@ -204,6 +204,21 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            // Windows: DWM folgt System-Theme nicht automatisch → explizit setzen
+            #[cfg(target_os = "windows")]
+            if let Some(window) = app.get_webview_window("main") {
+                let theme = if matches!(dark_light::detect(), dark_light::Mode::Dark) {
+                    tauri::Theme::Dark
+                } else {
+                    tauri::Theme::Light
+                };
+                let _ = window.set_theme(Some(theme));
+            }
+            // macOS: NSWindow.appearance = nil → erbt vom System
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_theme(None);
+            }
             #[cfg(debug_assertions)]
             {
                 if let Some(window) = app.get_webview_window("main") {

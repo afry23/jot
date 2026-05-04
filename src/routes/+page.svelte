@@ -33,6 +33,7 @@
         logger.error("Failed to load application data:", error);
       } finally {
         loading = false;
+        await Window.getCurrent().show();
         logger.info("Application data loaded successfully");
       }
     };

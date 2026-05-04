@@ -14,7 +14,8 @@
       {
         "title": "Jot",
         "width": 800,
-        "height": 700
+        "height": 700,
+        "visible": false
       }
     ],
     "trayIcon": {
