@@ -2,12 +2,13 @@
   import { onMount, onDestroy, createEventDispatcher } from "svelte";
   import {
     EditorView,
+    ViewPlugin,
     keymap,
     Decoration,
     type DecorationSet,
     type ViewUpdate,
   } from "@codemirror/view";
-  import { EditorState, Compartment, StateEffect, StateField } from "@codemirror/state";
+  import { EditorState, Compartment, StateEffect, StateField, RangeSetBuilder } from "@codemirror/state";
   import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
   import {
     HighlightStyle,
@@ -31,6 +32,53 @@
   import { getCodeBackground } from "$lib/utils/textFormatting";
   import { logger } from "$lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
+
+  // --- Hide-Marks Plugin: Syntax nur auf Cursor-Zeile sichtbar ---
+  const HIDE_MARKS = new Set([
+    "HeaderMark",
+    "EmphasisMark",
+    "CodeMark",
+    "QuoteMark",
+    "StrikethroughMark",
+  ]);
+
+  function buildHideMarksDecos(v: EditorView): DecorationSet {
+    const { state } = v;
+    const sel = state.selection.main;
+    const fromLine = state.doc.lineAt(sel.from).number;
+    const toLine = state.doc.lineAt(sel.to).number;
+    const builder = new RangeSetBuilder<Decoration>();
+    for (const { from, to } of v.visibleRanges) {
+      syntaxTree(state).iterate({
+        from,
+        to,
+        enter(node) {
+          if (HIDE_MARKS.has(node.name)) {
+            const markLine = state.doc.lineAt(node.from).number;
+            if (markLine < fromLine || markLine > toLine) {
+              builder.add(node.from, node.to, Decoration.replace({}));
+            }
+          }
+        },
+      });
+    }
+    return builder.finish();
+  }
+
+  const hideMarksPlugin = ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = buildHideMarksDecos(view);
+      }
+      update(update: ViewUpdate) {
+        if (update.docChanged || update.selectionSet || update.viewportChanged) {
+          this.decorations = buildHideMarksDecos(update.view);
+        }
+      }
+    },
+    { decorations: (v) => v.decorations }
+  );
 
   // --- Zeilen-Hervorhebung nach Tab-Wechsel ---
   const setHighlightLine = StateEffect.define<number | null>();
@@ -372,6 +420,7 @@
         doc: content,
         extensions: [
           markdown({ base: markdownLanguage }),
+          hideMarksPlugin,
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
           editorThemeCompartment.of(buildEditorTheme()),
