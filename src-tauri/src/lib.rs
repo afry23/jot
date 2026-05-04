@@ -16,6 +16,7 @@ mod credential_manager;
 mod storage_service;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[allow(dead_code)]
 struct AppSettings {
     theme: String,
     font_size: String,

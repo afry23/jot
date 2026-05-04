@@ -66,6 +66,7 @@ pub fn get_credential(service: &str, username: &str) -> Result<String, String> {
 }
 
 // Delete a credential from the system keychain
+#[allow(dead_code)]
 pub fn delete_credential(service: &str, username: &str) -> Result<(), String> {
     debug!(
         "Deleting credential for service: {}, username: {}",
