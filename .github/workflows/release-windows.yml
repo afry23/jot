@@ -3,21 +3,20 @@ name: Build Windows
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
-
+    runs-on: [self-hosted, windows]
     steps:
       - uses: actions/checkout@v4
 
       - name: Node.js einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Rust einrichten
         uses: dtolnay/rust-toolchain@stable
@@ -25,18 +24,17 @@ jobs:
       - name: Rust-Cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Abhängigkeiten installieren
         run: npm ci
 
       - name: Tauri App bauen
-        uses: tauri-apps/tauri-action@v0
+        shell: powershell
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Jot ${{ github.ref_name }}'
-          releaseBody: 'Windows-Build'
-          releaseDraft: true
-          prerelease: false
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw "Visual Studio Build Tools nicht gefunden." }
+          cmd /c "call `"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && where link && where cl && npm run tauri build"
