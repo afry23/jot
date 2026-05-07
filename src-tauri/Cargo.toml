@@ -1,6 +1,6 @@
 [package]
 name = "jot"
-version = "0.2.0"
+version = "0.3.0"
 description = "A simple note-taking app"
 authors = ["afry"]
 edition = "2021"
