@@ -4,26 +4,26 @@ A minimal note-taking app for quick thoughts and ideas.
 
 ## Overview
 
-Jot is a lightweight, minimalist note-taking application built with Tauri (Rust) and Svelte. Inspired by apps like Tot, Jot provides a simple way to organize your thoughts across seven color-coded tabs while maintaining a small footprint (under 10MB) and lightning-fast startup times (under 1 second).
+Jot is a lightweight, minimalist note-taking application built with Tauri (Rust) and Svelte. Inspired by apps like Tot, Jot provides a simple way to organize your thoughts across seven color-coded tabs while maintaining a small footprint and lightning-fast startup times.
 
 ## Features
 
 - **Seven Color-Coded Tabs**: Quickly navigate between different notes with visually distinct tabs
-- **Partial Markdown Support**: Simple formatting including headers, bold, italic, lists, and links
-- **Dual View Modes**: Switch between edit and preview modes
+- **WYSIWYG Markdown Editor**: Real-time markdown rendering while you type
 - **Text Statistics**: Automatic word, character, and line counting
-- **Dark/Light Theme**: Comfortable writing experience in any lighting environment  
-- **Persistent Storage**: Automatic saving of your notes
+- **Dark/Light Theme**: Comfortable writing experience in any lighting environment
+- **Persistent Storage**: Automatic saving of your notes with backup support
 - **Keyboard Shortcuts**: Efficient navigation and text manipulation
+- **Global Shortcut**: Show/hide window from anywhere
 - **Cross-Platform**: Works on Windows and macOS
 
 ## Installation
 
 ### Prerequisites
 
-- [Rust](https://www.rust-lang.org/tools/install) 1.60 or later
-- [Node.js](https://nodejs.org/) 14 or later
-- Tauri CLI: `cargo install tauri-cli`
+- [Rust](https://www.rust-lang.org/tools/install) 1.70 or later
+- [Node.js](https://nodejs.org/) 20 or later
+- Tauri CLI: `cargo install tauri-cli --version "^2"`
 
 ### Building from Source
 
@@ -56,25 +56,26 @@ Jot is a lightweight, minimalist note-taking application built with Tauri (Rust)
 
 ### Keyboard Shortcuts
 
-| Shortcut    | Action                      |
-|-------------|----------------------------- |
-| Ctrl+1-7    | Switch to tab 1-7           |
-| Ctrl+E      | Toggle edit/preview mode    |
-| Ctrl+D      | Toggle dark/light theme     |
-| Ctrl+B      | Bold text                   |
-| Ctrl+I      | Italic text                 |
-| Ctrl+T      | Insert timestamp            |
-| Ctrl+L      | Insert unordered list       |
-| Ctrl+O      | Insert ordered list         |
-| Ctrl+K      | Insert link                 |
-| Ctrl+Z      | Undo                        |
-| Ctrl+Y      | Redo                        |
-| Tab         | Insert indentation          |
-| Shift+Tab   | Remove indentation          |
+| Shortcut       | Action                      |
+|----------------|-----------------------------|
+| Ctrl+1-7       | Switch to tab 1-7           |
+| Ctrl+D         | Toggle dark/light theme     |
+| Ctrl+B         | Bold text                   |
+| Ctrl+I         | Italic text                 |
+| Ctrl+T         | Insert timestamp            |
+| Ctrl+L         | Insert unordered list       |
+| Ctrl+O         | Insert ordered list         |
+| Ctrl+H         | Insert link                 |
+| Ctrl+Z         | Undo                        |
+| Ctrl+Y         | Redo                        |
+| Tab            | Insert indentation          |
+| Shift+Tab      | Remove indentation          |
+| Ctrl+Shift+J   | Hide/Show window            |
+| Ctrl+Shift+B   | Create backup               |
 
 ### Markdown Support
 
-Jot supports common markdown syntax:
+Jot supports common markdown syntax with live preview:
 
 - `**bold text**` - Bold text
 - `*italic text*` - Italic text
@@ -87,24 +88,24 @@ Jot supports common markdown syntax:
 
 ```
 jot/
-├── src/                # Rust backend code
-│   ├── lib.rs          # Tauri commands implementation
-│   └── main.rs         # Application entry point
-├── src-tauri/          # Tauri configuration
+├── src-tauri/          # Rust backend + Tauri configuration
+│   ├── src/
+│   │   ├── lib.rs      # Tauri commands implementation
+│   │   └── main.rs     # Application entry point
+│   └── tauri.conf.json
 ├── src/                # Svelte frontend
 │   ├── lib/
 │   │   ├── components/ # UI components
 │   │   ├── stores/     # Svelte stores
 │   │   └── utils/      # Utility functions
 │   └── app.html        # App entry point
-├── public/             # Static assets
 └── package.json        # Project dependencies
 ```
 
 ## Technical Details
 
 - **Frontend**: Svelte, TypeScript
-- **Backend**: Rust, Tauri
+- **Backend**: Rust, Tauri v2
 - **Storage**: Local file system for persistence
 - **Bundle Size**: <15MB
 - **Startup Time**: <1 second
