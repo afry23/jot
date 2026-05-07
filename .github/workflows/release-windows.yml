@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: [self-hosted, windows]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +30,6 @@ jobs:
         run: npm ci
 
       - name: Tauri App bauen
-        shell: powershell
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vs) { throw "Visual Studio Build Tools nicht gefunden." }
-          cmd /c "call `"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && where link && where cl && npm run tauri build"
+        run: npm run tauri build
