@@ -40,6 +40,8 @@
     "CodeMark",
     "QuoteMark",
     "StrikethroughMark",
+    "LinkMark",
+    "URL",
   ]);
 
   function buildHideMarksDecos(v: EditorView): DecorationSet {
@@ -199,11 +201,6 @@
         fontWeight: "normal",
         fontStyle: "normal",
       },
-      // List markers
-      {
-        tag: tags.list,
-        color: syntaxMarkColor,
-      },
     ]);
   }
 
@@ -306,8 +303,12 @@
       hour: "2-digit",
       minute: "2-digit",
     });
-    const stamp = `**${formatted}**`;
     const { from } = view.state.selection.main;
+    const charBefore = from > 0 ? view.state.sliceDoc(from - 1, from) : "";
+    const charAfter = view.state.sliceDoc(from, from + 1);
+    const pre = charBefore && !/[\s]/.test(charBefore) ? " " : "";
+    const post = charAfter && !/[\s]/.test(charAfter) ? " " : "";
+    const stamp = `${pre}**${formatted}**${post}`;
     view.dispatch({
       changes: { from, to: from, insert: stamp },
       selection: { anchor: from + stamp.length },
