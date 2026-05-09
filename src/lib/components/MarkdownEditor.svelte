@@ -214,9 +214,19 @@
             btn.textContent = r.value;
             btn.onmousedown = (e) => {
               e.preventDefault();
+              const { errors } = view.state.field(spellErrorField);
+              const changes = view.state.changes({ from: match.from, to: match.to, insert: r.value });
+              const remaining = errors
+                .filter((err) => err.from !== match.from || err.to !== match.to)
+                .map((err) => ({
+                  ...err,
+                  from: changes.mapPos(err.from),
+                  to: changes.mapPos(err.to, 1),
+                }))
+                .filter((err) => err.from < err.to);
               view.dispatch({
                 changes: { from: match.from, to: match.to, insert: r.value },
-                effects: setSpellErrors.of([]),
+                effects: setSpellErrors.of(remaining),
               });
             };
             dom.appendChild(btn);
@@ -235,6 +245,7 @@
   function buildSpellCheckExtensions() {
     return [spellErrorField, spellCheckPlugin, spellHoverTooltip];
   }
+
 
   // --- Zeilen-Hervorhebung nach Tab-Wechsel ---
   const setHighlightLine = StateEffect.define<number | null>();
