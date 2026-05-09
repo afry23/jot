@@ -1,6 +1,5 @@
 export const shortcuts = [
   { key: "Ctrl+1-7", action: "Switch to tab 1-7" },
-  { key: "Ctrl+e", action: "Toggle edit/preview mode" },
   { key: "Ctrl+d", action: "Toggle dark/light theme" },
   { key: "Ctrl+b", action: "Bold text" },
   { key: "Ctrl+i", action: "Italic text" },
