@@ -14,7 +14,6 @@ export namespace SettingsCommands {
   export const LOAD_SETTINGS: string = "load_settings";
   export const SAVE_ACTIVE_TAB: string = "save_active_tab";
   export const HAS_LANGUAGETOOL_API_KEY: string = "has_languagetool_credential";
-  export const HAS_DEEPL_API_KEY: string = "has_deepl_credential";
 }
 
 export namespace NotesCommands {

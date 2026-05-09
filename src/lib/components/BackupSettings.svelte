@@ -188,6 +188,8 @@
             <div class="grid grid-cols-1 gap-2 mb-4">
                 {#each $backups as backup}
                     <div
+                        role="button"
+                        tabindex="0"
                         class="p-3 border rounded-md flex justify-between items-center cursor-pointer transition-colors"
                         class:bg-gray-50={$selectedBackupPath !== backup.path}
                         class:dark:bg-gray-800={$selectedBackupPath !==
@@ -206,6 +208,7 @@
                         class:dark:border-blue-700={$selectedBackupPath ===
                             backup.path}
                         on:click={() => selectedBackupPath.set(backup.path)}
+                        on:keydown={(e) => e.key === "Enter" && selectedBackupPath.set(backup.path)}
                     >
                         <div>
                             <div
