@@ -12,7 +12,8 @@ use tauri::{App, AppHandle, Manager};
 
 mod backup_service;
 mod credential_manager;
-    mod logging;
+mod language_service;
+mod logging;
 mod storage_service;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -279,12 +280,12 @@ pub fn run() {
             credential_manager::store_languagetool_credential,
             credential_manager::get_languagetool_credential,
             credential_manager::has_languagetool_credential,
-            credential_manager::store_deepl_credential,
-            credential_manager::get_deepl_credential,
-            credential_manager::has_deepl_credential,
             credential_manager::store_chatgpt_credential,
             credential_manager::get_chatgpt_credential,
             credential_manager::has_chatgpt_credential,
+            language_service::get_language_services_config,
+            language_service::save_language_tool_config,
+            language_service::check_grammar,
             storage_service::get_storage_settings,
             storage_service::set_storage_path
         ])

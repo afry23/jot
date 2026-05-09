@@ -4,7 +4,6 @@ use tauri::{command, AppHandle};
 
 // Service names for different credential types
 const LANGUAGETOOL_SERVICE: &str = "jot.languagetool";
-const DEEPL_SERVICE: &str = "jot.deepl";
 const CHATGPT_SERVICE: &str = "jot.chatgpt";
 
 // Helper function to create a keyring entry with consistent naming
@@ -94,29 +93,6 @@ pub fn get_languagetool_credential(username: String) -> Result<String, String> {
 #[command]
 pub fn has_languagetool_credential(username: String) -> bool {
     match get_credential(LANGUAGETOOL_SERVICE, &username) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
-}
-
-#[command]
-pub fn store_deepl_credential(app_handle: AppHandle, api_key: String) -> Result<(), String> {
-    // For services that don't have a username, we use a consistent identifier
-    // Including the app handle info to make it unique per installation
-    let app_id = app_handle.config().identifier.clone();
-    store_credential(DEEPL_SERVICE, &app_id, &api_key)
-}
-
-#[command]
-pub fn get_deepl_credential(app_handle: AppHandle) -> Result<String, String> {
-    let app_id = app_handle.config().identifier.clone();
-    get_credential(DEEPL_SERVICE, &app_id)
-}
-
-#[command]
-pub fn has_deepl_credential(app_handle: AppHandle) -> bool {
-    let app_id = app_handle.config().identifier.clone();
-    match get_credential(DEEPL_SERVICE, &app_id) {
         Ok(_) => true,
         Err(_) => false,
     }

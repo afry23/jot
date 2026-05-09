@@ -2,6 +2,7 @@
   import { createBackup, loadBackups } from "$lib/stores/backupStore";
   import { notes } from "$lib/stores/notes";
   import { theme, toggleTheme } from "$lib/stores/settings";
+  import { spellCheckEnabled, toggleSpellCheck } from "$lib/stores/languageServices";
   import { activeTab } from "$lib/stores/tabs";
   import { activeTabBackground } from "$lib/stores/tabStyles";
   import { emptyTabColor, tabColors } from "$lib/utils/colors";
@@ -120,6 +121,16 @@
       </div>
     {/if}
 
+    <!-- Spell check toggle -->
+    <button
+      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+      class:text-blue-500={$spellCheckEnabled}
+      on:click={toggleSpellCheck}
+      title="Rechtschreibprüfung {$spellCheckEnabled ? '(an)' : '(aus)'}"
+    >
+      <FontAwesomeIcon icon="spell-check" />
+    </button>
+
     <!-- Backup button -->
     <button
       class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -156,19 +167,4 @@
 <Help bind:this={helpComponent} />
 
 <style>
-  /* Custom animation for dropdown menus */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(5px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.2s ease-out;
-  }
 </style>

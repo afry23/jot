@@ -11,6 +11,7 @@
     import Button from "./Button.svelte";
     import BackupSettings from "./BackupSettings.svelte";
     import StorageSettings from "./StorageSettings.svelte";
+    import LanguageSettings from "./LanguageSettings.svelte";
     import { getVersion } from "@tauri-apps/api/app";
     import { onMount } from "svelte";
 
@@ -27,7 +28,7 @@
     ];
 
     // Settings tabs
-    type SettingsTab = "appearance" | "storage" | "backups" | "about";
+    type SettingsTab = "appearance" | "storage" | "backups" | "language" | "about";
     let activeTab: SettingsTab = "appearance";
 
     function changeFontSize(size: FontSize) {
@@ -74,6 +75,17 @@
                     <FontAwesomeIcon icon="archive" class="sidebar-icon" />
                 </div>
                 <span>Backups</span>
+            </button>
+
+            <button
+                class="sidebar-tab"
+                class:active={activeTab === "language"}
+                on:click={() => setActiveTab("language")}
+            >
+                <div class="sidebar-icon">
+                    <FontAwesomeIcon icon="language" class="sidebar-icon" />
+                </div>
+                <span>Language</span>
             </button>
 
             <button
@@ -154,10 +166,10 @@
             </div>
         {/if}
 
-        <!-- Logs tab -->
-        {#if activeTab === "logs"}
+        <!-- Language tab -->
+        {#if activeTab === "language"}
             <div class="tab-content">
-                <LogSettings />
+                <LanguageSettings />
             </div>
         {/if}
 

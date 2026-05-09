@@ -18,7 +18,13 @@
     });
 </script>
 
-<div class="modal-backdrop" on:click={cancel}></div>
+<div
+    class="modal-backdrop"
+    role="button"
+    tabindex="-1"
+    on:click={cancel}
+    on:keydown={(e) => e.key === "Escape" && cancel()}
+></div>
 <div class="modal">
     <form on:submit|preventDefault={submit}>
         <label>

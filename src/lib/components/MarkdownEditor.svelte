@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from "svelte";
+  import { get } from "svelte/store";
   import {
     EditorView,
     ViewPlugin,
     keymap,
     Decoration,
+    hoverTooltip,
     type DecorationSet,
     type ViewUpdate,
   } from "@codemirror/view";
@@ -21,8 +23,10 @@
     historyKeymap,
   } from "@codemirror/commands";
   import { tags } from "@lezer/highlight";
+  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-shell";
   import { theme, fontSize } from "$lib/stores/settings";
+  import { spellCheckEnabled, type GrammarError } from "$lib/stores/languageServices";
   import { activeTab } from "$lib/stores/tabs";
   import { notes, updateNote } from "$lib/stores/notes";
   import { tabColors } from "$lib/utils/colors";
@@ -82,6 +86,156 @@
     { decorations: (v) => v.decorations }
   );
 
+  // --- Spell-Check via LanguageTool ---
+
+  interface SpellError {
+    from: number;
+    to: number;
+    error: GrammarError;
+  }
+
+  interface SpellState {
+    decorations: DecorationSet;
+    errors: SpellError[];
+  }
+
+  const setSpellErrors = StateEffect.define<SpellError[]>();
+
+  const spellErrorField = StateField.define<SpellState>({
+    create: () => ({ decorations: Decoration.none, errors: [] }),
+    update(state, tr) {
+      let decorations = state.decorations.map(tr.changes);
+      let errors = state.errors
+        .map((e) => ({
+          ...e,
+          from: tr.changes.mapPos(e.from),
+          to: tr.changes.mapPos(e.to, 1),
+        }))
+        .filter((e) => e.from < e.to);
+
+      for (const effect of tr.effects) {
+        if (effect.is(setSpellErrors)) {
+          const newErrors = effect.value;
+          const builder = new RangeSetBuilder<Decoration>();
+          for (const { from, to } of newErrors.sort((a, b) => a.from - b.from)) {
+            if (from < to) {
+              builder.add(from, to, Decoration.mark({ class: "cm-spell-error" }));
+            }
+          }
+          decorations = builder.finish();
+          errors = newErrors;
+        }
+      }
+
+      return { decorations, errors };
+    },
+    provide: (f) => EditorView.decorations.from(f, (s) => s.decorations),
+  });
+
+  const spellCheckPlugin = ViewPlugin.fromClass(
+    class {
+      private timer: ReturnType<typeof setTimeout> | null = null;
+      private view: EditorView;
+
+      constructor(view: EditorView) {
+        this.view = view;
+        this.scheduleCheck();
+      }
+
+      update(update: ViewUpdate) {
+        if (update.docChanged) this.scheduleCheck();
+      }
+
+      scheduleCheck() {
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(() => this.runCheck(), 1500);
+      }
+
+      async runCheck() {
+        const text = this.view.state.doc.toString();
+        if (!text.trim()) {
+          this.view.dispatch({ effects: setSpellErrors.of([]) });
+          return;
+        }
+        try {
+          const result = await invoke<{ matches: GrammarError[] }>("check_grammar", {
+            text,
+            language: "auto",
+          });
+          if (!this.view.dom.isConnected) return;
+          const errors: SpellError[] = result.matches.map((m) => ({
+            from: m.offset,
+            to: m.offset + m.length,
+            error: m,
+          }));
+          this.view.dispatch({ effects: setSpellErrors.of(errors) });
+        } catch (e) {
+          logger.error("Spell check failed", String(e));
+        }
+      }
+
+      destroy() {
+        if (this.timer) clearTimeout(this.timer);
+      }
+    }
+  );
+
+  const spellHoverTooltip = hoverTooltip(
+    (view, pos) => {
+    if (!view.state.field(spellErrorField, false)) return null;
+    const { errors } = view.state.field(spellErrorField);
+    const match = errors.find((e) => pos >= e.from && pos <= e.to);
+    if (!match) return null;
+
+    return {
+      pos: match.from,
+      end: match.to,
+      above: true,
+      create() {
+        const isDark = !!document.querySelector(".dark");
+        const dom = document.createElement("div");
+        dom.className = "cm-spell-tooltip";
+        dom.style.cssText = isDark
+          ? "background:#2d2d2d;color:#e0e0e0;border-color:rgba(255,255,255,0.12)"
+          : "background:#fff;color:#1a1a1a;border-color:rgba(0,0,0,0.12)";
+
+        if (match.error.replacements.length === 0) {
+          const none = document.createElement("span");
+          none.className = "cm-spell-tooltip-empty";
+          none.textContent = match.error.message;
+          dom.appendChild(none);
+        } else {
+          match.error.replacements.slice(0, 5).forEach((r) => {
+            const btn = document.createElement("button");
+            btn.className = "cm-spell-suggestion";
+            btn.style.cssText = isDark
+              ? "border-color:rgba(255,255,255,0.18);color:#e0e0e0"
+              : "border-color:rgba(0,0,0,0.15);color:#1a1a1a";
+            btn.textContent = r.value;
+            btn.onmousedown = (e) => {
+              e.preventDefault();
+              view.dispatch({
+                changes: { from: match.from, to: match.to, insert: r.value },
+                effects: setSpellErrors.of([]),
+              });
+            };
+            dom.appendChild(btn);
+          });
+        }
+
+        return { dom };
+      },
+    };
+  },
+  {
+    hideOn: (tr) => tr.effects.some((e) => e.is(setSpellErrors)),
+  }
+  );
+
+  function buildSpellCheckExtensions() {
+    return [spellErrorField, spellCheckPlugin, spellHoverTooltip];
+  }
+
   // --- Zeilen-Hervorhebung nach Tab-Wechsel ---
   const setHighlightLine = StateEffect.define<number | null>();
 
@@ -125,6 +279,7 @@
 
   const highlightCompartment = new Compartment();
   const editorThemeCompartment = new Compartment();
+  const spellCheckCompartment = new Compartment();
 
   function buildHighlightStyle() {
     const isDark = $theme === "dark";
@@ -263,6 +418,15 @@
     const _t = $theme;
     const _f = $fontSize;
     if (view && (_t || _f)) reconfigureEditor();
+  }
+
+  // Toggle spell check on/off
+  $: if (view) {
+    view.dispatch({
+      effects: spellCheckCompartment.reconfigure(
+        $spellCheckEnabled ? buildSpellCheckExtensions() : []
+      ),
+    });
   }
 
   // --- Markdown formatting helpers ---
@@ -425,6 +589,7 @@
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
           editorThemeCompartment.of(buildEditorTheme()),
+          spellCheckCompartment.of([]),
           history(),
           EditorView.lineWrapping,
           EditorView.updateListener.of(handleUpdate),
@@ -449,6 +614,23 @@
                   }
                   break;
                 }
+                if (node.name === "Link" || node.name === "Image") {
+                  let child = node.firstChild;
+                  while (child) {
+                    if (child.name === "URL") {
+                      const href = editorView.state.sliceDoc(child.from, child.to);
+                      if (/^https?:\/\/|^mailto:/i.test(href)) {
+                        event.preventDefault();
+                        open(href).catch((e) =>
+                          logger.error("Failed to open URL", e)
+                        );
+                        return true;
+                      }
+                    }
+                    child = child.nextSibling;
+                  }
+                  break;
+                }
                 if (!node.parent) break;
                 node = node.parent;
               }
@@ -470,6 +652,13 @@
       }),
       parent: editorContainer,
     });
+
+    // Initialize spell check if it was previously enabled
+    if (get(spellCheckEnabled)) {
+      view.dispatch({
+        effects: spellCheckCompartment.reconfigure(buildSpellCheckExtensions()),
+      });
+    }
 
     requestAnimationFrame(() => restorePositions());
   });
@@ -522,5 +711,44 @@
     0%   { background-color: rgba(255, 200, 80, 0.28); }
     40%  { background-color: rgba(255, 200, 80, 0.18); }
     100% { background-color: transparent; }
+  }
+
+  :global(.cm-spell-error) {
+    text-decoration: underline wavy red;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  :global(.cm-spell-tooltip) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    max-width: 280px;
+    background: var(--cm-tooltip-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  :global(.cm-spell-suggestion) {
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.88em;
+    color: inherit;
+    transition: background 0.1s;
+  }
+
+  :global(.cm-spell-suggestion:hover) {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  :global(.cm-spell-tooltip-empty) {
+    font-size: 0.85em;
+    opacity: 0.7;
+    font-style: italic;
   }
 </style>

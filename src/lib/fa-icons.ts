@@ -36,6 +36,7 @@ import {
   faRobot,
   faBrain,
   faMagic,
+  faSpellCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Add all icons to the library
@@ -74,5 +75,6 @@ library.add(
   faFileImport,
   faRobot,
   faBrain,
-  faMagic
+  faMagic,
+  faSpellCheck
 );
