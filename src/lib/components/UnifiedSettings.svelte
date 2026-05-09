@@ -12,6 +12,7 @@
     import BackupSettings from "./BackupSettings.svelte";
     import StorageSettings from "./StorageSettings.svelte";
     import LanguageSettings from "./LanguageSettings.svelte";
+    import ChatGPTSettings from "./ChatGPTSettings.svelte";
     import { getVersion } from "@tauri-apps/api/app";
     import { onMount } from "svelte";
 
@@ -28,7 +29,7 @@
     ];
 
     // Settings tabs
-    type SettingsTab = "appearance" | "storage" | "backups" | "language" | "about";
+    type SettingsTab = "appearance" | "storage" | "backups" | "language" | "ai" | "about";
     let activeTab: SettingsTab = "appearance";
 
     function changeFontSize(size: FontSize) {
@@ -86,6 +87,17 @@
                     <FontAwesomeIcon icon="language" class="sidebar-icon" />
                 </div>
                 <span>Language</span>
+            </button>
+
+            <button
+                class="sidebar-tab"
+                class:active={activeTab === "ai"}
+                on:click={() => setActiveTab("ai")}
+            >
+                <div class="sidebar-icon">
+                    <FontAwesomeIcon icon="magic" class="sidebar-icon" />
+                </div>
+                <span>AI</span>
             </button>
 
             <button
@@ -170,6 +182,13 @@
         {#if activeTab === "language"}
             <div class="tab-content">
                 <LanguageSettings />
+            </div>
+        {/if}
+
+        <!-- AI tab -->
+        {#if activeTab === "ai"}
+            <div class="tab-content">
+                <ChatGPTSettings />
             </div>
         {/if}
 

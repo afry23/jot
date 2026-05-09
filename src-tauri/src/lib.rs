@@ -11,6 +11,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::{App, AppHandle, Manager};
 
 mod backup_service;
+mod chatgpt_service;
 mod credential_manager;
 mod language_service;
 mod logging;
@@ -283,6 +284,9 @@ pub fn run() {
             credential_manager::store_chatgpt_credential,
             credential_manager::get_chatgpt_credential,
             credential_manager::has_chatgpt_credential,
+            chatgpt_service::get_chatgpt_config,
+            chatgpt_service::save_chatgpt_config,
+            chatgpt_service::chat_with_gpt,
             language_service::get_language_services_config,
             language_service::save_language_tool_config,
             language_service::check_grammar,

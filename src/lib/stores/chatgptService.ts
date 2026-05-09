@@ -1,21 +1,14 @@
-// $lib/stores/chatgptService.ts
 import { writable, get } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 
-// Types for ChatGPT integration
 export interface ChatGPTConfig {
-  api_key: string | null;
   model: string;
   endpoint: string;
   max_tokens: number;
   temperature: number;
-}
-
-export interface ChatGPTRequest {
-  messages: ChatMessage[];
-  model: string;
-  max_tokens: number;
-  temperature: number;
+  provider: string;
+  default_rewrite_style: string;
+  api_key_stored: boolean;
 }
 
 export interface ChatMessage {
@@ -23,72 +16,105 @@ export interface ChatMessage {
   content: string;
 }
 
-export interface ChatGPTResponse {
-  choices: {
-    message: {
-      content: string;
-      role: string;
-    };
-  }[];
-  usage: {
-    total_tokens: number;
-  };
-}
-
-// Default configuration
-const defaultConfig: ChatGPTConfig = {
-  api_key: null,
-  model: "gpt-3.5-turbo",
-  endpoint: "https://api.openai.com/v1/chat/completions",
-  max_tokens: 500,
-  temperature: 0.7,
+export const REWRITE_STYLES: Record<
+  string,
+  { label: string; systemPrompt: string }
+> = {
+  formal_sie: {
+    label: "Formal (Sie)",
+    systemPrompt:
+      "Formuliere den folgenden Text formell um und verwende 'Sie' als Anrede. Gib ausschließlich den umformulierten Text zurück, ohne Erklärungen oder Kommentare.",
+  },
+  friendly_du: {
+    label: "Freundlich (du)",
+    systemPrompt:
+      "Formuliere den folgenden Text freundlich und persönlich um, verwende 'du' als Anrede. Gib ausschließlich den umformulierten Text zurück.",
+  },
+  kollegial: {
+    label: "Kollegial",
+    systemPrompt:
+      "Formuliere den folgenden Text in einem kollegialen, professionellen Arbeitsumgangston um. Gib ausschließlich den umformulierten Text zurück.",
+  },
+  professionell: {
+    label: "Professionell",
+    systemPrompt:
+      "Formuliere den folgenden Text in einem klaren, sachlichen und professionellen Ton um. Gib ausschließlich den umformulierten Text zurück.",
+  },
+  praegnant: {
+    label: "Prägnant",
+    systemPrompt:
+      "Verdichte den folgenden Text auf das Wesentliche. Kürze ohne Inhaltsverlust. Gib ausschließlich den gekürzten Text zurück.",
+  },
+  custom: {
+    label: "Eigene Anweisung",
+    systemPrompt: "",
+  },
 };
 
-// Store for ChatGPT configuration
-export const chatGPTConfig = writable<ChatGPTConfig>(defaultConfig);
+export const TRANSLATE_LANGUAGES: Record<string, string> = {
+  de: "Deutsch",
+  en: "Englisch",
+  fr: "Französisch",
+  es: "Spanisch",
+  it: "Italienisch",
+  pt: "Portugiesisch",
+  nl: "Niederländisch",
+  pl: "Polnisch",
+};
 
-// Store for current response and state
-export const chatGPTResponse = writable<string>("");
+const defaultConfig: ChatGPTConfig = {
+  model: "gpt-4o-mini",
+  endpoint: "https://api.openai.com/v1/chat/completions",
+  max_tokens: 1000,
+  temperature: 0.7,
+  provider: "openai",
+  default_rewrite_style: "formal_sie",
+  api_key_stored: false,
+};
+
+export const chatGPTConfig = writable<ChatGPTConfig>(defaultConfig);
 export const isProcessing = writable<boolean>(false);
 export const chatGPTError = writable<string | null>(null);
 
-// Load ChatGPT configuration
 export async function loadChatGPTConfig(): Promise<void> {
   try {
-    const config = await invoke<ChatGPTConfig>("get_chatgpt_config_command");
+    const config = await invoke<ChatGPTConfig>("get_chatgpt_config");
     chatGPTConfig.set(config);
-    return;
   } catch (error) {
     console.error("Failed to load ChatGPT config:", error);
   }
 }
 
-// Save ChatGPT configuration
-export async function saveChatGPTConfig(
-  apiKey?: string,
-  model?: string,
-  endpoint?: string,
-  maxTokens?: number,
-  temperature?: number
-): Promise<boolean> {
+export async function saveChatGPTConfig(options: {
+  apiKey?: string;
+  model?: string;
+  endpoint?: string;
+  maxTokens?: number;
+  temperature?: number;
+  provider?: string;
+  defaultRewriteStyle?: string;
+}): Promise<boolean> {
   try {
-    const currentConfig = get(chatGPTConfig);
-
-    await invoke("save_chatgpt_config_command", {
-      apiKey: apiKey,
-      model: model,
-      endpoint: endpoint,
-      maxTokens: maxTokens,
-      temperature: temperature,
+    await invoke("save_chatgpt_config", {
+      apiKey: options.apiKey ?? null,
+      model: options.model ?? null,
+      endpoint: options.endpoint ?? null,
+      maxTokens: options.maxTokens ?? null,
+      temperature: options.temperature ?? null,
+      provider: options.provider ?? null,
+      defaultRewriteStyle: options.defaultRewriteStyle ?? null,
     });
 
-    // Update local store
     chatGPTConfig.update((config) => ({
       ...config,
-      model: model ?? config.model,
-      endpoint: endpoint ?? config.endpoint,
-      max_tokens: maxTokens ?? config.max_tokens,
-      temperature: temperature ?? config.temperature,
+      model: options.model ?? config.model,
+      endpoint: options.endpoint ?? config.endpoint,
+      max_tokens: options.maxTokens ?? config.max_tokens,
+      temperature: options.temperature ?? config.temperature,
+      provider: options.provider ?? config.provider,
+      default_rewrite_style:
+        options.defaultRewriteStyle ?? config.default_rewrite_style,
+      api_key_stored: options.apiKey ? true : config.api_key_stored,
     }));
 
     return true;
@@ -98,62 +124,50 @@ export async function saveChatGPTConfig(
   }
 }
 
-// Send request to ChatGPT
-export async function sendToChatGPT(
-  prompt: string,
-  action: "summarize" | "chat" = "chat"
+export async function processText(
+  selectedText: string,
+  action: "rewrite" | "expand" | "translate",
+  options: { styleKey?: string; customPrompt?: string; targetLang?: string } = {}
 ): Promise<string> {
-  if (!prompt.trim()) {
-    return "";
-  }
-
   const config = get(chatGPTConfig);
 
   isProcessing.set(true);
   chatGPTError.set(null);
-  chatGPTResponse.set("");
 
   try {
-    // Customize system message based on action
-    let systemMessage = "";
-    if (action === "summarize") {
-      systemMessage = "Summarize the following text concisely:";
+    let systemMessage: string;
+
+    if (action === "rewrite") {
+      const styleKey = options.styleKey ?? config.default_rewrite_style;
+      if (styleKey === "custom" && options.customPrompt) {
+        systemMessage = `${options.customPrompt} Gib ausschließlich das Ergebnis zurück, ohne Erklärungen.`;
+      } else {
+        systemMessage =
+          REWRITE_STYLES[styleKey]?.systemPrompt ??
+          REWRITE_STYLES["formal_sie"].systemPrompt;
+      }
+    } else if (action === "expand") {
+      systemMessage =
+        "Erweitere den folgenden Text mit mehr Details, Kontext und Ausführlichkeit. Behalte den ursprünglichen Ton und Stil bei. Gib ausschließlich den erweiterten Text zurück.";
     } else {
-      systemMessage = "You are a helpful assistant.";
+      const lang = TRANSLATE_LANGUAGES[options.targetLang ?? "en"] ?? "Englisch";
+      systemMessage = `Übersetze den folgenden Text ins ${lang}. Gib ausschließlich die Übersetzung zurück, ohne Erklärungen.`;
     }
 
-    const response = await invoke<ChatGPTResponse>("chat_with_gpt", {
-      prompt,
+    const result = await invoke<string>("chat_with_gpt", {
+      prompt: selectedText,
       systemMessage,
       model: config.model,
       maxTokens: config.max_tokens,
       temperature: config.temperature,
     });
 
-    if (response.choices && response.choices.length > 0) {
-      const responseText = response.choices[0].message.content;
-      chatGPTResponse.set(responseText);
-      return responseText;
-    }
-
-    return "";
+    return result;
   } catch (error) {
-    const errorMessage = `ChatGPT request failed: ${error}`;
-    console.error(errorMessage);
-    chatGPTError.set(errorMessage);
-    return "";
+    const msg = String(error);
+    chatGPTError.set(msg);
+    throw new Error(msg);
   } finally {
     isProcessing.set(false);
   }
-}
-
-// Summarize text with ChatGPT
-export async function summarizeWithChatGPT(text: string): Promise<string> {
-  return sendToChatGPT(text, "summarize");
-}
-
-// Clear ChatGPT response and error
-export function clearChatGPTState(): void {
-  chatGPTResponse.set("");
-  chatGPTError.set(null);
 }

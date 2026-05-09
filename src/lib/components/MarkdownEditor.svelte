@@ -36,6 +36,7 @@
   import { getCodeBackground } from "$lib/utils/textFormatting";
   import { logger } from "$lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
+  import AIActionModal from "./AIActionModal.svelte";
 
   // --- Hide-Marks Plugin: Syntax nur auf Cursor-Zeile sichtbar ---
   const HIDE_MARKS = new Set([
@@ -281,6 +282,10 @@
   let view: EditorView | null = null;
   let showLinkModal = false;
   let linkModalInitialText = "";
+  let showAIModal = false;
+  let aiFrom = 0;
+  let aiTo = 0;
+  let aiSelectedText = "";
 
   const fontSizeMap: Record<string, string> = {
     small: "14px",
@@ -519,6 +524,33 @@
     view?.focus();
   }
 
+  function openAIModal(): boolean {
+    if (!view) return false;
+    const { from, to } = view.state.selection.main;
+    if (from === to) return false;
+    aiFrom = from;
+    aiTo = to;
+    aiSelectedText = view.state.sliceDoc(from, to);
+    showAIModal = true;
+    return true;
+  }
+
+  function handleAISubmit(event: CustomEvent<{ result: string }>) {
+    if (!view) return;
+    const result = event.detail.result;
+    view.dispatch({
+      changes: { from: aiFrom, to: aiTo, insert: result },
+      selection: { anchor: aiFrom + result.length },
+    });
+    showAIModal = false;
+    view.focus();
+  }
+
+  function handleAICancel() {
+    showAIModal = false;
+    view?.focus();
+  }
+
   function indentLine(): boolean {
     if (!view) return false;
     const { state } = view;
@@ -653,6 +685,7 @@
             { key: "Mod-i", run: () => toggleWrap("*") },
             { key: "Mod-`", run: () => toggleWrap("`") },
             { key: "Mod-k", run: () => openLinkModal() },
+            { key: "Mod-Shift-r", run: () => openAIModal() },
             { key: "Mod-t", run: () => insertTimestamp() },
             { key: "Tab", run: () => indentLine() },
             { key: "Shift-Tab", run: () => unindentLine() },
@@ -694,6 +727,14 @@
     initialText={linkModalInitialText}
     on:submit={handleLinkSubmit}
     on:cancel={handleLinkCancel}
+  />
+{/if}
+
+{#if showAIModal}
+  <AIActionModal
+    selectedText={aiSelectedText}
+    on:submit={handleAISubmit}
+    on:cancel={handleAICancel}
   />
 {/if}
 
