@@ -85,8 +85,8 @@ pub fn get_language_services_config(
     let username = settings["lt_username"].as_str().map(|s| s.to_string());
 
     // Indicate if API key is stored (without exposing the key itself)
-    let has_key = username.as_deref().map_or(false, |uname| {
-        credential_manager::get_credential(LANGUAGETOOL_SERVICE, uname).is_ok()
+    let has_key = username.as_deref().is_some_and(|uname| {
+        credential_manager::get_credential(&app_handle, LANGUAGETOOL_SERVICE, uname).is_ok()
     });
 
     Ok(LanguageServicesConfig {
@@ -119,7 +119,7 @@ pub fn save_language_tool_config(
     write_settings(&app_handle, &settings)?;
 
     if let (Some(ref uname), Some(ref key)) = (&username, &api_key) {
-        credential_manager::store_credential(LANGUAGETOOL_SERVICE, uname, key)?;
+        credential_manager::store_credential(&app_handle, LANGUAGETOOL_SERVICE, uname, key)?;
     }
 
     Ok(())
@@ -145,7 +145,9 @@ pub async fn check_grammar(
     ];
 
     if let Some(ref uname) = username {
-        if let Ok(api_key) = credential_manager::get_credential(LANGUAGETOOL_SERVICE, uname) {
+        if let Ok(api_key) =
+            credential_manager::get_credential(&app_handle, LANGUAGETOOL_SERVICE, uname)
+        {
             params.push(("username".to_string(), uname.clone()));
             params.push(("apiKey".to_string(), api_key));
         }
