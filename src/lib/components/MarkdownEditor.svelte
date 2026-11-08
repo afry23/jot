@@ -66,6 +66,12 @@
         to,
         enter(node) {
           if (HIDE_MARKS.has(node.name)) {
+            // URL/LinkMark nur in echten Markdown-Links verstecken,
+            // nackte URLs und <Autolinks> bleiben immer sichtbar.
+            if (node.name === "URL" || node.name === "LinkMark") {
+              const parent = node.node.parent?.name;
+              if (parent !== "Link" && parent !== "Image") return;
+            }
             const markLine = state.doc.lineAt(node.from).number;
             if (markLine < fromLine || markLine > toLine) {
               builder.add(node.from, node.to, Decoration.replace({}));
