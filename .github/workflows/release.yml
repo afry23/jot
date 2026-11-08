@@ -169,6 +169,21 @@ jobs:
           printf 'tauri.android.versionName=%s\ntauri.android.versionCode=%s\n' "$name" "$code" \
             > src-tauri/gen/android/app/tauri.properties
 
+      - name: Gradle-Wrapper cachen
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-wrapper-${{ hashFiles('src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Gradle-Wrapper laden (mit Retry gegen Netzwerk-Timeouts)
+        working-directory: src-tauri/gen/android
+        run: |
+          for i in 1 2 3 4 5; do
+            ./gradlew --version && exit 0
+            echo "Versuch $i fehlgeschlagen, warte..."; sleep $((i * 15))
+          done
+          exit 1
+
       - run: npm ci
       - run: npm run tauri android build -- --apk --aab
 
