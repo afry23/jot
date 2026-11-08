@@ -4,7 +4,6 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import adapter from "@sveltejs/adapter-static";
 import tailwindcss from "@tailwindcss/vite";
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
@@ -23,18 +22,18 @@ export default defineConfig(async () => ({
     extend: {
       colors: {
         tab: {
-          yellow: '#F6C046',
-          orange: '#F0874F',
-          red: '#F25D66',
-          gray: '#7D7E8A',
-          blueGray: '#7E7E9A',
-          purple: '#9D7E9A',
-          green: '#7E9D7E',
+          yellow: "#F6C046",
+          orange: "#F0874F",
+          red: "#F25D66",
+          gray: "#7D7E8A",
+          blueGray: "#7E7E9A",
+          purple: "#9D7E9A",
+          green: "#7E9D7E",
         },
         // App theme colors
         primary: {
-          DEFAULT: '#f0a05a', // Your accent color
-          dark: '#d38a4a',
+          DEFAULT: "#f0a05a", // Your accent color
+          dark: "#d38a4a",
         },
       },
     },
