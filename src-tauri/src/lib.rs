@@ -176,7 +176,7 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
         } = event
         {
             let app = tray.app_handle();
-            toggle_window(&app.app_handle());
+            toggle_window(app.app_handle());
         }
     });
 
@@ -203,7 +203,7 @@ pub fn run() {
     // Android hat keinen keyring-Store: Zugangsdaten laufen über den Android Keystore.
     #[cfg(target_os = "android")]
     let builder = builder.plugin(tauri_plugin_secure_storage::init());
-    let _tauri_app = builder
+    builder
         .on_window_event(|_window, _event| {
             // Desktop: Close-Request versteckt das Fenster im Tray statt es zu schließen.
             #[cfg(desktop)]
@@ -246,11 +246,10 @@ pub fn run() {
                     .with_handler({
                         let app_handle = app_handle.clone();
                         move |_app, shortcut, event| {
-                            if shortcut == &ctrl_j_shortcut {
-                                if event.state() == ShortcutState::Released {
+                            if shortcut == &ctrl_j_shortcut
+                                && event.state() == ShortcutState::Released {
                                    toggle_window(&app_handle);
                                 }
-                            }
                         }
                     })
                     .build(),

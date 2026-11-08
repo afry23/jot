@@ -22,9 +22,17 @@ mod store {
         }
     }
 
-    pub fn set(app: &AppHandle, service: &str, username: &str, password: &str) -> Result<(), String> {
+    pub fn set(
+        app: &AppHandle,
+        service: &str,
+        username: &str,
+        password: &str,
+    ) -> Result<(), String> {
         app.secure_storage()
-            .set_item(app.clone(), request(service, username, Some(password.to_string())))
+            .set_item(
+                app.clone(),
+                request(service, username, Some(password.to_string())),
+            )
             .map(|_| ())
             .map_err(|e| format!("Failed to store credential: {}", e))
     }
@@ -54,7 +62,12 @@ mod store {
         Entry::new(service, username).map_err(|e| format!("Keyring error: {}", e))
     }
 
-    pub fn set(_app: &AppHandle, service: &str, username: &str, password: &str) -> Result<(), String> {
+    pub fn set(
+        _app: &AppHandle,
+        service: &str,
+        username: &str,
+        password: &str,
+    ) -> Result<(), String> {
         let entry = create_entry(service, username)?;
         entry
             .set_password(password)
@@ -90,40 +103,53 @@ pub fn store_credential(
     username: &str,
     password: &str,
 ) -> Result<(), String> {
-    debug!("Storing credential for service: {}, username: {}", service, username);
+    debug!(
+        "Storing credential for service: {}, username: {}",
+        service, username
+    );
     store::set(app, service, username, password)
 }
 
 // Retrieve a credential from the system keychain
 pub fn get_credential(app: &AppHandle, service: &str, username: &str) -> Result<String, String> {
-    debug!("Retrieving credential for service: {}, username: {}", service, username);
+    debug!(
+        "Retrieving credential for service: {}, username: {}",
+        service, username
+    );
     store::get(app, service, username)
 }
 
 // Delete a credential from the system keychain
 #[allow(dead_code)]
 pub fn delete_credential(app: &AppHandle, service: &str, username: &str) -> Result<(), String> {
-    debug!("Deleting credential for service: {}, username: {}", service, username);
+    debug!(
+        "Deleting credential for service: {}, username: {}",
+        service, username
+    );
     store::delete(app, service, username)
 }
 
 // Tauri commands for frontend interaction
 #[command]
-pub fn store_languagetool_credential(app_handle: AppHandle, username: String, api_key: String) -> Result<(), String> {
+pub fn store_languagetool_credential(
+    app_handle: AppHandle,
+    username: String,
+    api_key: String,
+) -> Result<(), String> {
     store_credential(&app_handle, LANGUAGETOOL_SERVICE, &username, &api_key)
 }
 
 #[command]
-pub fn get_languagetool_credential(app_handle: AppHandle, username: String) -> Result<String, String> {
+pub fn get_languagetool_credential(
+    app_handle: AppHandle,
+    username: String,
+) -> Result<String, String> {
     get_credential(&app_handle, LANGUAGETOOL_SERVICE, &username)
 }
 
 #[command]
 pub fn has_languagetool_credential(app_handle: AppHandle, username: String) -> bool {
-    match get_credential(&app_handle, LANGUAGETOOL_SERVICE, &username) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    get_credential(&app_handle, LANGUAGETOOL_SERVICE, &username).is_ok()
 }
 
 #[command]
@@ -141,8 +167,5 @@ pub fn get_chatgpt_credential(app_handle: AppHandle) -> Result<String, String> {
 #[command]
 pub fn has_chatgpt_credential(app_handle: AppHandle) -> bool {
     let app_id = app_handle.config().identifier.clone();
-    match get_credential(&app_handle, CHATGPT_SERVICE, &app_id) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    get_credential(&app_handle, CHATGPT_SERVICE, &app_id).is_ok()
 }
