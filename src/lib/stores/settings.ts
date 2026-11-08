@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { activeTab } from "./tabs";
 
@@ -39,14 +39,10 @@ export function setFontSize(size: FontSize) {
 
 // Save settings to storage
 export async function saveSettings() {
-  let currentTheme: Theme;
-  let currentFontSize: FontSize;
-  let currentTab: number;
-
   // Get current values from stores
-  theme.subscribe((value) => (currentTheme = value))();
-  fontSize.subscribe((value) => (currentFontSize = value))();
-  activeTab.subscribe((value) => (currentTab = value))();
+  const currentTheme = get(theme);
+  const currentFontSize = get(fontSize);
+  const currentTab = get(activeTab);
 
   // Save to localStorage first (for quick access)
   localStorage.setItem("jot-theme", currentTheme);

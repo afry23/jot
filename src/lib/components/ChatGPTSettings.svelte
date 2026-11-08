@@ -19,7 +19,7 @@
   // Success/error messages
   let saveSuccess: boolean = false;
   let saveError: string | null = null;
-  let saveTimeout: number | null = null;
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Model options
   const modelOptions = [

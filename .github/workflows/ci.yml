@@ -27,9 +27,7 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
-      # TODO: 12 bestehende svelte-check-Fehler beheben, dann continue-on-error entfernen
       - run: npm run check
-        continue-on-error: true
       - run: npm run build
 
   rust:
