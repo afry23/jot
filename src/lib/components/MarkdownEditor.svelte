@@ -36,6 +36,8 @@
   import { getCodeBackground } from "#lib/utils/textFormatting";
   import { autocompletion } from "@codemirror/autocomplete";
   import { codeBlocksExtension, languageCompletion } from "#lib/utils/codeBlocks";
+  import { headingsExtension } from "#lib/utils/headings";
+  import { foldKeymap } from "@codemirror/language";
   import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
@@ -634,6 +636,7 @@
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           hideMarksPlugin,
           codeBlocksExtension(),
+          headingsExtension(),
           autocompletion({ override: [languageCompletion], icons: false }),
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
@@ -694,6 +697,7 @@
             { key: "Mod-t", run: () => insertTimestamp() },
             { key: "Tab", run: () => indentLine() },
             { key: "Shift-Tab", run: () => unindentLine() },
+            ...foldKeymap,
             ...historyKeymap,
             ...defaultKeymap,
           ]),
@@ -814,6 +818,81 @@
   }
   :global(.cm-codeblock-btn:hover) { background: rgba(128, 128, 128, 0.25); }
   :global(.cm-codeblock-btn-on) { background: rgba(128, 128, 128, 0.35); }
+
+  :global(.cm-heading-line) { position: relative; }
+  :global(.cm-heading-tools) {
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.12s;
+    user-select: none;
+  }
+  :global(.cm-heading-line:hover .cm-heading-tools),
+  :global(.cm-heading-line-active .cm-heading-tools),
+  :global(.cm-heading-tools-folded) { opacity: 0.6; }
+  :global(.cm-heading-tools:hover) { opacity: 1 !important; }
+  :global(.cm-heading-fold),
+  :global(.cm-heading-level) {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 3px;
+    cursor: pointer;
+  }
+  :global(.cm-heading-fold) { display: flex; align-items: center; }
+  :global(.cm-heading-fold svg) { transition: transform 0.12s; }
+  :global(.cm-heading-fold-closed svg) { transform: rotate(-90deg); }
+  :global(.cm-heading-fold:hover),
+  :global(.cm-heading-level:hover) { background: rgba(128, 128, 128, 0.25); }
+  :global(.cm-heading-menu) {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 64px;
+    padding: 4px;
+    margin-top: 4px;
+    background: var(--cm-tooltip-bg, #fff);
+    color: #222;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+  :global(.cm-heading-menu-item) {
+    font: inherit;
+    font-size: 12px;
+    color: inherit;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  :global(.cm-heading-menu-item:hover) { background: rgba(128, 128, 128, 0.2); }
+  :global(.cm-heading-menu-active) { font-weight: 700; }
+  :global(.cm-heading-menu-text) { border-top: 1px solid rgba(128, 128, 128, 0.25); border-radius: 0 0 4px 4px; margin-top: 2px; }
+  :global(.cm-heading-fold-placeholder) {
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.2);
+    cursor: pointer;
+    opacity: 0.7;
+  }
 
   :global(.cm-spell-error) {
     text-decoration: underline wavy red;
