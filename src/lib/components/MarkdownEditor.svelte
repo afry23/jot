@@ -34,6 +34,9 @@
   import { cursorPositions, scrollPositions } from "#lib/stores/cursorPostionStore";
   import { getHeadingColorWithOpacity } from "#lib/utils/uiColors";
   import { getCodeBackground } from "#lib/utils/textFormatting";
+  import { autocompletion } from "@codemirror/autocomplete";
+  import { codeBlocksExtension, languageCompletion } from "#lib/utils/codeBlocks";
+  import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
 
@@ -42,6 +45,7 @@
     "HeaderMark",
     "EmphasisMark",
     "CodeMark",
+    "CodeInfo",
     "QuoteMark",
     "StrikethroughMark",
     "LinkMark",
@@ -360,6 +364,16 @@
         color: isDark ? "#BBBBBB" : "#666666",
         fontStyle: "italic",
       },
+      // Code tokens (in Fenced Code Blocks)
+      { tag: [tags.keyword, tags.modifier, tags.operatorKeyword], color: isDark ? "#C792EA" : "#7c3aed" },
+      { tag: [tags.string, tags.special(tags.string), tags.regexp], color: isDark ? "#C3E88D" : "#15803d" },
+      { tag: [tags.number, tags.bool, tags.null, tags.atom], color: isDark ? "#F78C6C" : "#c2410c" },
+      { tag: [tags.comment, tags.lineComment, tags.blockComment], color: isDark ? "#7f8c8d" : "#6b7280", fontStyle: "italic" },
+      { tag: [tags.function(tags.variableName), tags.function(tags.propertyName), tags.definition(tags.variableName)], color: isDark ? "#82AAFF" : "#1d4ed8" },
+      { tag: [tags.typeName, tags.className, tags.namespace], color: isDark ? "#FFCB6B" : "#b45309" },
+      { tag: [tags.propertyName, tags.attributeName], color: isDark ? "#89DDFF" : "#0e7490" },
+      { tag: [tags.operator, tags.punctuation], color: isDark ? "#89DDFF" : "#475569" },
+      { tag: tags.tagName, color: isDark ? "#F07178" : "#be123c" },
       // Syntax marks (**, *, #, `, >, -) — dimmed so they fade into background
       {
         tag: tags.processingInstruction,
@@ -389,7 +403,7 @@
           caretColor,
           fontFamily:
             "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          padding: "20px 28px 200px",
+          padding: "20px 28px 200px 44px",
           lineHeight: "1.7",
           color: textColor,
           maxWidth: "800px",
@@ -404,6 +418,28 @@
         "::selection": { backgroundColor: selBg },
         ".cm-activeLine": { backgroundColor: activeLineBg },
         ".cm-gutters": { display: "none" },
+        ".cm-tooltip.cm-tooltip-autocomplete": {
+          backgroundColor: isDark ? "#252525" : "#ffffff",
+          color: textColor,
+          border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)"}`,
+          borderRadius: "10px",
+          padding: "4px",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+        },
+        ".cm-tooltip-autocomplete > ul": {
+          fontFamily: "inherit",
+          fontSize: "0.95em",
+        },
+        ".cm-tooltip-autocomplete > ul > li": {
+          padding: "4px 12px",
+          borderRadius: "6px",
+        },
+        ".cm-tooltip-autocomplete > ul > li[aria-selected]": {
+          backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
+          color: textColor,
+        },
+        ".cm-completionDetail": { opacity: "0.5", marginLeft: "0.8em", fontStyle: "normal" },
+        ".cm-completionMatchedText": { textDecoration: "none", fontWeight: "bold" },
         ".cm-scroller": { overflow: "auto", height: "100%" },
         ".cm-line": { padding: "0 4px" },
         "&.cm-focused": { outline: "none" },
@@ -595,8 +631,10 @@
       state: EditorState.create({
         doc: content,
         extensions: [
-          markdown({ base: markdownLanguage }),
+          markdown({ base: markdownLanguage, codeLanguages: languages }),
           hideMarksPlugin,
+          codeBlocksExtension(),
+          autocompletion({ override: [languageCompletion], icons: false }),
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
           editorThemeCompartment.of(buildEditorTheme()),
@@ -723,6 +761,59 @@
     40%  { background-color: rgba(255, 200, 80, 0.18); }
     100% { background-color: transparent; }
   }
+
+  :global(.cm-codeblock-line) {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+    background: rgba(128, 128, 128, 0.1);
+    padding-left: 12px !important;
+    position: relative;
+  }
+  :global(.cm-codeblock-fence-hidden) {
+    font-size: 0.5em !important;
+    line-height: 1.3 !important;
+  }
+  :global(.cm-codeblock-numbered) { padding-left: 44px !important; }
+  :global(.cm-codeblock-numbered::before) {
+    content: attr(data-ln);
+    position: absolute;
+    left: 0;
+    width: 32px;
+    text-align: right;
+    opacity: 0.45;
+    user-select: none;
+  }
+  :global(.cm-codeblock-copy),
+  :global(.cm-codeblock-ln) {
+    position: absolute;
+    top: 0;
+    opacity: 0.4;
+    transition: opacity 0.12s, background 0.12s;
+  }
+  :global(.cm-codeblock-copy) { left: -32px; }
+  :global(.cm-codeblock-ln) { right: 6px; top: 2px; }
+  :global(.cm-codeblock-copy:hover),
+  :global(.cm-codeblock-ln:hover),
+  :global(.cm-codeblock-btn-on) { opacity: 1; }
+  :global(.cm-codeblock-btn) {
+    font: inherit;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  :global(.cm-codeblock-btn:hover) { background: rgba(128, 128, 128, 0.25); }
+  :global(.cm-codeblock-btn-on) { background: rgba(128, 128, 128, 0.35); }
 
   :global(.cm-spell-error) {
     text-decoration: underline wavy red;
