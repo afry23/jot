@@ -151,20 +151,6 @@ fn load_notes(app_handle: AppHandle) -> Result<HashMap<usize, String>, String> {
     Ok(notes)
 }
 
-#[tauri::command]
-fn close_window(app_handle: AppHandle) {
-    info!("Closing the main window");
-    // Hiding windows is a desktop-only concept; no-op on mobile.
-    #[cfg(desktop)]
-    if let Some(main_window) = app_handle.get_webview_window("main") {
-        main_window
-            .hide()
-            .unwrap_or_else(|e| info!("Failed to hide window: {}", e));
-    }
-    #[cfg(mobile)]
-    let _ = app_handle;
-}
-
 #[cfg(desktop)]
 fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
@@ -214,6 +200,14 @@ pub fn run() {
     let _tauri_app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .on_window_event(|_window, _event| {
+            // Desktop: Close-Request versteckt das Fenster im Tray statt es zu schließen.
+            #[cfg(desktop)]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                api.prevent_close();
+                let _ = _window.hide();
+            }
+        })
         .setup(|app| {
             // Windows: DWM folgt System-Theme nicht automatisch → explizit setzen
             #[cfg(target_os = "windows")]
@@ -272,7 +266,6 @@ pub fn run() {
             load_settings,
             save_active_tab,
             load_notes,
-            close_window,
             // Backup service commands
             backup_service::create_backup,
             backup_service::list_backups,
