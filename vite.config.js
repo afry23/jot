@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import adapter from "@sveltejs/adapter-static";
 import tailwindcss from "@tailwindcss/vite";
 
 // @ts-expect-error process is a nodejs global
@@ -7,7 +9,16 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [sveltekit(), tailwindcss()],
+  plugins: [
+    // Tauri doesn't have a Node.js server to do proper SSR
+    // so we use adapter-static to prerender the app (SSG)
+    // See: https://v2.tauri.app/start/frontend/sveltekit/
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter(),
+    }),
+    tailwindcss(),
+  ],
   theme: {
     extend: {
       colors: {

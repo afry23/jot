@@ -1,4 +1,4 @@
-// $lib/utils/logger.ts
+// #lib/utils/logger.ts
 import { invoke } from "@tauri-apps/api/core";
 import { LogLevel, DEFAULT_LOG_LEVEL } from "./logLevels";
 import { writable, get } from "svelte/store";

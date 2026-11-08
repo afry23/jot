@@ -1,4 +1,4 @@
-// $lib/stores/history.ts
+// #lib/stores/history.ts
 import { writable } from "svelte/store";
 import { activeTab } from "./tabs";
 import { get } from "svelte/store";

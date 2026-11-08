@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { logger, logLevelStore } from "$lib/utils/logger";
-  import { LogLevel, logLevelLabels } from "$lib/utils/logLevels";
+  import { logger, logLevelStore } from "#lib/utils/logger";
+  import { LogLevel, logLevelLabels } from "#lib/utils/logLevels";
 
   // Create an array for the UI to iterate over
   const logLevelOptions = Object.values(LogLevel)

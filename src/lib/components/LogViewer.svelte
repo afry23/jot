@@ -1,7 +1,7 @@
-<!-- $lib/components/LogViewer.svelte -->
+<!-- #lib/components/LogViewer.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { logger } from "$lib/utils/logger";
+  import { logger } from "#lib/utils/logger";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import Button from "./Button.svelte";
 

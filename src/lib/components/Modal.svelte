@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
-  import { theme } from "$lib/stores/settings";
+  import { theme } from "#lib/stores/settings";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import Button from "./Button.svelte";
 

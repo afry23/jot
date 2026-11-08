@@ -1,11 +1,11 @@
-<!-- $lib/components/LogSettings.svelte -->
+<!-- #lib/components/LogSettings.svelte -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import Button from "./Button.svelte";
   import LogViewer from "./LogViewer.svelte";
-  import { logger } from "$lib/utils/logger";
+  import { logger } from "#lib/utils/logger";
   import LogLevelSettings from "./LogLevelSettings.svelte";
 
   // State

@@ -21,7 +21,7 @@
         countBackups,
         initBackupSystem,
         type Backup,
-    } from "$lib/stores/backupStore";
+    } from "#lib/stores/backupStore";
     import { invoke } from "@tauri-apps/api/core";
 
     // Local state

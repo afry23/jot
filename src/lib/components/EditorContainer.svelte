@@ -1,8 +1,8 @@
 <script lang="ts">
   import MarkdownEditor from "./MarkdownEditor.svelte";
-  import { activeTab } from "$lib/stores/tabs";
-  import { notes, updateNote } from "$lib/stores/notes";
-  import { emptyTabColor, tabColors } from "$lib/utils/colors";
+  import { activeTab } from "#lib/stores/tabs";
+  import { notes, updateNote } from "#lib/stores/notes";
+  import { emptyTabColor, tabColors } from "#lib/utils/colors";
 
   // Function to check if the current tab is empty
   $: isCurrentTabEmpty =

@@ -5,8 +5,8 @@ import { myredo, myundo } from "./history";
 import { notes, updateNote } from "./notes";
 import { register } from "@tauri-apps/plugin-global-shortcut";
 import { Window } from "@tauri-apps/api/window";
-import { logger } from "$lib/utils/logger";
-import { saveNote } from "$lib/utils/persistence";
+import { logger } from "#lib/utils/logger";
+import { saveNote } from "#lib/utils/persistence";
 
 async function toggleWindow() {
   console.log("Toggling window visibility");

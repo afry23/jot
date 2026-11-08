@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { createBackup, loadBackups } from "$lib/stores/backupStore";
-  import { notes } from "$lib/stores/notes";
-  import { theme, toggleTheme } from "$lib/stores/settings";
-  import { spellCheckEnabled, toggleSpellCheck } from "$lib/stores/languageServices";
-  import { activeTab } from "$lib/stores/tabs";
-  import { activeTabBackground } from "$lib/stores/tabStyles";
-  import { emptyTabColor, tabColors } from "$lib/utils/colors";
+  import { createBackup, loadBackups } from "#lib/stores/backupStore";
+  import { notes } from "#lib/stores/notes";
+  import { theme, toggleTheme } from "#lib/stores/settings";
+  import { spellCheckEnabled, toggleSpellCheck } from "#lib/stores/languageServices";
+  import { activeTab } from "#lib/stores/tabs";
+  import { activeTabBackground } from "#lib/stores/tabStyles";
+  import { emptyTabColor, tabColors } from "#lib/utils/colors";
   import {
     countCharacters,
     countLines,
     countWords,
-  } from "$lib/utils/textFormatting";
+  } from "#lib/utils/textFormatting";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import { onMount } from "svelte";
   import "../fa-icons";

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { theme } from "$lib/stores/settings";
+  import { theme } from "#lib/stores/settings";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import {
     chatGPTConfig,
     loadChatGPTConfig,
     saveChatGPTConfig,
-  } from "$lib/stores/chatgptService";
+  } from "#lib/stores/chatgptService";
     import FormField from "./FormField.svelte";
 
   // Local state
