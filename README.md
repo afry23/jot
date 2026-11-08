@@ -28,7 +28,7 @@ Pre-built binaries for macOS, Windows, Linux and Android are on the [Releases pa
 ### Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install) 1.70 or later
-- [Node.js](https://nodejs.org/) 22 or later
+- [Node.js](https://nodejs.org/) 24 or later
 - Tauri CLI: `cargo install tauri-cli --version "^2"`
 
 ### Building from Source

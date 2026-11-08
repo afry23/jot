@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
       - run: npm ci
       # TODO: 12 bestehende svelte-check-Fehler beheben, dann continue-on-error entfernen
@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -88,9 +88,11 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:

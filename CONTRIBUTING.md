@@ -4,7 +4,7 @@ Thanks for your interest! Bug reports, ideas and pull requests are welcome.
 
 ## Setup
 
-Requirements: Node.js 22+, Rust (stable), and the
+Requirements: Node.js 24+, Rust (stable), and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ```sh
