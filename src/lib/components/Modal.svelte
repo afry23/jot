@@ -2,11 +2,12 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   import { theme } from "#lib/stores/settings";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import type { IconProp } from "@fortawesome/fontawesome-svg-core";
   import Button from "./Button.svelte";
 
   // Props
   export let title: string = "";
-  export let icon: string | null = null;
+  export let icon: IconProp | null = null;
   export let width: string = "500px";
   export let closeOnClickOutside: boolean = false;
   export let showFooter: boolean = true;

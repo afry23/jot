@@ -104,7 +104,7 @@ export async function setStoragePath(path: string | null): Promise<void> {
 // For TypeScript
 declare global {
   interface Window {
-    savingTimeout: number | null;
+    savingTimeout: ReturnType<typeof setTimeout> | null;
   }
 }
 
