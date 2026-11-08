@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { emptyTabColor } from "$lib/utils/colors";
+  import { emptyTabColor } from "#lib/utils/colors";
 
   export let color: string;
   export let active: boolean = false;

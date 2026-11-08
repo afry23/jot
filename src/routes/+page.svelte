@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Header from "$lib/components/Header.svelte";
-  import EditorContainer from "$lib/components/EditorContainer.svelte";
-  import StatusBar from "$lib/components/StatusBar.svelte";
-  import { activeTab } from "$lib/stores/tabs";
-  import { notes, updateNote } from "$lib/stores/notes";
-  import { theme, fontSize, loadSettings } from "$lib/stores/settings";
-  import { loadNotes, saveNote } from "$lib/utils/persistence";
+  import Header from "#lib/components/Header.svelte";
+  import EditorContainer from "#lib/components/EditorContainer.svelte";
+  import StatusBar from "#lib/components/StatusBar.svelte";
+  import { activeTab } from "#lib/stores/tabs";
+  import { notes, updateNote } from "#lib/stores/notes";
+  import { theme, fontSize, loadSettings } from "#lib/stores/settings";
+  import { loadNotes, saveNote } from "#lib/utils/persistence";
   import "../app.css";
-  import { setupKeyboardShortcuts } from "$lib/stores/keyboardShortcuts";
-  import { initializeHistory } from "$lib/stores/history";
-  import { logger } from "$lib/utils/logger";
+  import { setupKeyboardShortcuts } from "#lib/stores/keyboardShortcuts";
+  import { initializeHistory } from "#lib/stores/history";
+  import { logger } from "#lib/utils/logger";
   import { Window } from "@tauri-apps/api/window";
 
   let loading = true;

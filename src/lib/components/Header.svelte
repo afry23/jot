@@ -2,12 +2,12 @@
   import ColorDot from "./ColorDot.svelte";
   import Modal from "./Modal.svelte";
   import UnifiedSettings from "./UnifiedSettings.svelte";
-  import { activeTab, setActiveTab } from "$lib/stores/tabs";
-  import { notes } from "$lib/stores/notes"; // Import notes to check content
+  import { activeTab, setActiveTab } from "#lib/stores/tabs";
+  import { notes } from "#lib/stores/notes"; // Import notes to check content
   import { Window } from "@tauri-apps/api/window";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import "../fa-icons";
-  import { tabColors } from "$lib/utils/colors";
+  import { tabColors } from "#lib/utils/colors";
 
   // Reference to modal component
   let settingsModal: Modal | undefined = undefined;

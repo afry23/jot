@@ -1,4 +1,4 @@
-import { tabColors } from "$lib/utils/colors";
+import { tabColors } from "#lib/utils/colors";
 import { invoke } from "@tauri-apps/api/core";
 import { derived, get, writable } from "svelte/store";
 

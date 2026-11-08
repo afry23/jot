@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 import { pushToHistory } from "./history";
-import { saveNote } from "$lib/utils/persistence";
+import { saveNote } from "#lib/utils/persistence";
 
 export const notesLoaded = writable<boolean>(false);
 

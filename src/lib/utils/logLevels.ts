@@ -1,4 +1,4 @@
-// $lib/utils/logLevels.ts
+// #lib/utils/logLevels.ts
 export enum LogLevel {
   TRACE = 0,
   DEBUG = 1,

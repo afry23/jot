@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-    import { countBackups } from "$lib/stores/backupStore";
-    import { theme } from "$lib/stores/settings";
+    import { countBackups } from "#lib/stores/backupStore";
+    import { theme } from "#lib/stores/settings";
     
     // Props
     export let compact: boolean = false; // Whether to show a compact version

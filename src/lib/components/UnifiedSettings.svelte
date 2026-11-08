@@ -5,7 +5,7 @@
         fontSize,
         setFontSize,
         type FontSize,
-    } from "$lib/stores/settings";
+    } from "#lib/stores/settings";
     import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
     import "../fa-icons";
     import Button from "./Button.svelte";

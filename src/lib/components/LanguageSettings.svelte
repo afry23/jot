@@ -6,11 +6,11 @@
     languageConfig,
     loadLanguageServicesConfig,
     saveLanguageToolConfig,
-  } from "$lib/stores/languageServices";
+  } from "#lib/stores/languageServices";
   import Button from "./Button.svelte";
   import FormField from "./FormField.svelte";
     import { invoke } from "@tauri-apps/api/core";
-    import { SettingsCommands } from "$lib/utils/tauriCommands";
+    import { SettingsCommands } from "#lib/utils/tauriCommands";
 
   // Local state
   let languagetoolApiKey: string = "";

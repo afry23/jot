@@ -25,16 +25,16 @@
   import { tags } from "@lezer/highlight";
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-shell";
-  import { theme, fontSize } from "$lib/stores/settings";
-  import { spellCheckEnabled, type GrammarError } from "$lib/stores/languageServices";
-  import { activeTab } from "$lib/stores/tabs";
-  import { notes, updateNote } from "$lib/stores/notes";
-  import { tabColors } from "$lib/utils/colors";
-  import { saveNote } from "$lib/utils/persistence";
-  import { cursorPositions, scrollPositions } from "$lib/stores/cursorPostionStore";
-  import { getHeadingColorWithOpacity } from "$lib/utils/uiColors";
-  import { getCodeBackground } from "$lib/utils/textFormatting";
-  import { logger } from "$lib/utils/logger";
+  import { theme, fontSize } from "#lib/stores/settings";
+  import { spellCheckEnabled, type GrammarError } from "#lib/stores/languageServices";
+  import { activeTab } from "#lib/stores/tabs";
+  import { notes, updateNote } from "#lib/stores/notes";
+  import { tabColors } from "#lib/utils/colors";
+  import { saveNote } from "#lib/utils/persistence";
+  import { cursorPositions, scrollPositions } from "#lib/stores/cursorPostionStore";
+  import { getHeadingColorWithOpacity } from "#lib/utils/uiColors";
+  import { getCodeBackground } from "#lib/utils/textFormatting";
+  import { logger } from "#lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
 
   // --- Hide-Marks Plugin: Syntax nur auf Cursor-Zeile sichtbar ---

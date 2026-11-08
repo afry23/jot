@@ -4,10 +4,10 @@
   import { invoke } from "@tauri-apps/api/core";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import { listen } from "@tauri-apps/api/event";
-  import { logger } from "$lib/utils/logger";
+  import { logger } from "#lib/utils/logger";
   import Button from "./Button.svelte";
-  import { loadNotes } from "$lib/utils/persistence";
-  import { notes } from "$lib/stores/notes";
+  import { loadNotes } from "#lib/utils/persistence";
+  import { notes } from "#lib/stores/notes";
 
   // Local state
   let customStoragePath: string = "";
