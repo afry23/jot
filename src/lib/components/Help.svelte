@@ -19,6 +19,9 @@
     { syntax: "- item", description: "List item" },
     { syntax: "1. item", description: "Ordered list item" },
     { syntax: "[text](url)", description: "Link" },
+    { syntax: "# Heading", description: "Heading (levels 1-6)" },
+    { syntax: "`code`", description: "Inline code" },
+    { syntax: "```js … ```", description: "Code block with language" },
   ];
 
   export function open() {
@@ -80,10 +83,30 @@
         <h3>Features</h3>
         <ul class="list-disc pl-5 text-gray-600 dark:text-gray-400 space-y-1">
           <li>Seven color-coded tabs for quick note organization</li>
-          <li>Markdown support for basic formatting</li>
+          <li>
+            Live Markdown editor: formatting is rendered, formatting characters
+            stay visible but dimmed
+          </li>
+          <li>
+            Headings: change level and fold sections via the marker at the
+            heading
+          </li>
+          <li>
+            Code blocks: syntax highlighting, language completion after ```,
+            copy button and optional line numbers
+          </li>
+          <li>
+            Spell and grammar check via LanguageTool (Settings → Language)
+          </li>
+          <li>
+            WebDAV sync: notes sync on app start and shortly after saving
+            (Settings → Sync). On conflict the older version is kept as a copy
+            on the server
+          </li>
           <li>Dark and light themes</li>
           <li>Automatic saving</li>
           <li>Backup and restore capability</li>
+          <li>Closing the window hides Jot to the system tray</li>
         </ul>
       </div>
 

@@ -6,6 +6,7 @@ use tauri::{command, AppHandle};
 // Service names for different credential types
 const LANGUAGETOOL_SERVICE: &str = "jot.languagetool";
 const CHATGPT_SERVICE: &str = "jot.chatgpt";
+pub const WEBDAV_SERVICE: &str = "jot.webdav";
 
 // Android: kein keyring-Store verfügbar → tauri-plugin-secure-storage (Android Keystore, AES-GCM)
 #[cfg(target_os = "android")]
@@ -168,4 +169,9 @@ pub fn get_chatgpt_credential(app_handle: AppHandle) -> Result<String, String> {
 pub fn has_chatgpt_credential(app_handle: AppHandle) -> bool {
     let app_id = app_handle.config().identifier.clone();
     get_credential(&app_handle, CHATGPT_SERVICE, &app_id).is_ok()
+}
+
+#[command]
+pub fn has_webdav_credential(app_handle: AppHandle, username: String) -> bool {
+    get_credential(&app_handle, WEBDAV_SERVICE, &username).is_ok()
 }

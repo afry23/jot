@@ -12,8 +12,10 @@
   import { initializeHistory } from "#lib/stores/history";
   import { logger } from "#lib/utils/logger";
   import { Window } from "@tauri-apps/api/window";
+  import { initWebdavSync } from "#lib/stores/webdavStore";
 
   let loading = true;
+  let cleanupWebdav: (() => void) | undefined;
 
   // Load notes and settings on mount
   onMount(() => {
@@ -29,6 +31,8 @@
         logger.info("Loading notes");
         await loadNotes();
         initializeHistory($notes);
+        // Start WebDAV sync (non-blocking); keep cleanup for destroy
+        initWebdavSync().then((cleanup) => (cleanupWebdav = cleanup));
       } catch (error) {
         logger.error("Failed to load application data:", error);
       } finally {
@@ -58,6 +62,7 @@
     // Cleanup function
     return () => {
       if (cleanupShortcuts) cleanupShortcuts();
+      if (cleanupWebdav) cleanupWebdav();
     };
   });
 
@@ -96,8 +101,9 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+      Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     background-color: #f7f7f7;
     color: #333;
     transition:
