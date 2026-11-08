@@ -1,11 +1,12 @@
 <script lang="ts">
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import type { IconProp } from "@fortawesome/fontawesome-svg-core";
   
   // Props
   export let type: "button" | "submit" | "reset" = "button";
   export let variant: "default" | "primary" | "success" | "danger" | "ghost" | "outline" = "default";
   export let size: "sm" | "md" | "lg" = "md";
-  export let icon: string | null = null;
+  export let icon: IconProp | null = null;
   export let iconPosition: "left" | "right" = "left";
   export let disabled: boolean = false;
   export let fullWidth: boolean = false;
