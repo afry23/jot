@@ -3,6 +3,8 @@ name = "jot"
 version = "0.3.3"
 description = "A simple note-taking app"
 authors = ["afry"]
+license = "GPL-3.0-only"
+repository = "https://github.com/afry23/jot"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,7 +24,7 @@ tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["full"] }
 url = "2.3"
 chrono = "0.4"
