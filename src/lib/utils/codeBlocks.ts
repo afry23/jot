@@ -12,7 +12,10 @@ import {
 } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import type { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import type {
+  CompletionContext,
+  CompletionResult,
+} from "@codemirror/autocomplete";
 import { logger } from "./logger";
 
 interface BlockInfo {
@@ -33,7 +36,9 @@ const toggleLineNumbers = StateEffect.define<number>();
 const numberedBlocks = StateField.define<number[]>({
   create: () => [],
   update(value, tr) {
-    let next = tr.docChanged ? value.map((p) => tr.changes.mapPos(p, -1)) : value;
+    let next = tr.docChanged
+      ? value.map((p) => tr.changes.mapPos(p, -1))
+      : value;
     for (const e of tr.effects) {
       if (e.is(toggleLineNumbers)) {
         next = next.includes(e.value)
@@ -138,7 +143,9 @@ class CodeToolsWidget extends WidgetType {
 
     const lnBtn = document.createElement("button");
     lnBtn.type = "button";
-    lnBtn.className = "cm-codeblock-btn cm-codeblock-ln" + (this.numbered ? " cm-codeblock-btn-on" : "");
+    lnBtn.className =
+      "cm-codeblock-btn cm-codeblock-ln" +
+      (this.numbered ? " cm-codeblock-btn-on" : "");
     lnBtn.textContent = "#";
     lnBtn.title = "Zeilennummern";
     lnBtn.onmousedown = (e) => {
@@ -157,7 +164,6 @@ class CodeToolsWidget extends WidgetType {
 
 function buildDecorations(state: EditorState): DecorationSet {
   const ranges: Range<Decoration>[] = [];
-  const sel = state.selection.main;
   const numbered = state.field(numberedBlocks);
   for (const block of collectBlocks(state)) {
     const isNumbered = numbered.includes(block.from);
@@ -171,16 +177,18 @@ function buildDecorations(state: EditorState): DecorationSet {
     );
     for (let n = first; n <= last; n++) {
       const line = state.doc.line(n);
-      const isFence = n === first || (n === last && /^\s*(`{3,}|~{3,})\s*$/.test(line.text));
+      const isFence =
+        n === first || (n === last && /^\s*(`{3,}|~{3,})\s*$/.test(line.text));
       const attrs: Record<string, string> = {};
       let cls = "cm-codeblock-line";
-      const onFenceWithCursor = sel.from <= line.to && sel.to >= line.from;
-      if (isFence && !onFenceWithCursor) cls += " cm-codeblock-fence-hidden";
+      if (isFence) cls += " cm-codeblock-fence";
       if (isNumbered && !isFence) {
         cls += " cm-codeblock-numbered";
         attrs["data-ln"] = String(n - first);
       }
-      ranges.push(Decoration.line({ class: cls, attributes: attrs }).range(line.from));
+      ranges.push(
+        Decoration.line({ class: cls, attributes: attrs }).range(line.from)
+      );
     }
   }
   return Decoration.set(ranges, true);
@@ -189,7 +197,12 @@ function buildDecorations(state: EditorState): DecorationSet {
 const codeBlockDecorations = StateField.define<DecorationSet>({
   create: (state) => buildDecorations(state),
   update(deco, tr) {
-    if (tr.docChanged || tr.selection || tr.effects.some((e) => e.is(toggleLineNumbers)) || syntaxTree(tr.state) !== syntaxTree(tr.startState)) {
+    if (
+      tr.docChanged ||
+      tr.selection ||
+      tr.effects.some((e) => e.is(toggleLineNumbers)) ||
+      syntaxTree(tr.state) !== syntaxTree(tr.startState)
+    ) {
       return buildDecorations(tr.state);
     }
     return deco;
@@ -216,13 +229,18 @@ const languageOptions = (() => {
   return out;
 })();
 
-export function languageCompletion(ctx: CompletionContext): CompletionResult | null {
+export function languageCompletion(
+  ctx: CompletionContext
+): CompletionResult | null {
   const line = ctx.state.doc.lineAt(ctx.pos);
   const before = line.text.slice(0, ctx.pos - line.from);
   const m = /^\s*(?:`{3,}|~{3,})([\w+#.-]*)$/.exec(before);
   if (!m) return null;
   // nur öffnende Fence (nicht schließende): vorheriger Text darf keine offene Fence sein
-  const node = syntaxTree(ctx.state).resolveInner(line.from + before.length - m[1].length, -1);
+  const node = syntaxTree(ctx.state).resolveInner(
+    line.from + before.length - m[1].length,
+    -1
+  );
   let n: typeof node | null = node;
   while (n && n.name !== "FencedCode") n = n.parent;
   if (n && n.from < line.from) return null;
