@@ -262,6 +262,7 @@
   let view: EditorView | null = null;
   let showLinkModal = false;
   let linkModalInitialText = "";
+  let linkModalInitialHref = "";
 
   const fontSizeMap: Record<string, string> = {
     small: "14px",
@@ -547,7 +548,18 @@
   function openLinkModal(): boolean {
     if (!view) return false;
     const { from, to } = view.state.selection.main;
-    linkModalInitialText = view.state.sliceDoc(from, to);
+    const selected = view.state.sliceDoc(from, to).trim();
+    if (/^(?:[a-z][a-z0-9+.-]*:\/\/|mailto:)\S+$/i.test(selected)) {
+      // Selektierte URL -> als Link-URL vorbelegen, Text wird eingegeben
+      linkModalInitialHref = selected;
+      linkModalInitialText = "";
+    } else if (/^www\.\S+$/i.test(selected)) {
+      linkModalInitialHref = `https://${selected}`;
+      linkModalInitialText = "";
+    } else {
+      linkModalInitialHref = "";
+      linkModalInitialText = view.state.sliceDoc(from, to);
+    }
     showLinkModal = true;
     return true;
   }
@@ -748,6 +760,7 @@
 
 {#if showLinkModal}
   <LinkModal
+    initialHref={linkModalInitialHref}
     initialText={linkModalInitialText}
     on:submit={handleLinkSubmit}
     on:cancel={handleLinkCancel}
