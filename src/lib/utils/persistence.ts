@@ -18,6 +18,8 @@ export async function saveNote(tabIndex: number, content: string) {
         tabIndex,
         content,
       });
+      // Let the WebDAV sync know there is something new to push
+      window.dispatchEvent(new CustomEvent("jot:note-saved"));
     }, 1000); // 1 second debounce
 
     return true;
