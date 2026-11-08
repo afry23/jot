@@ -6,9 +6,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+#[cfg(desktop)]
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
+#[cfg(desktop)]
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
-use tauri::{App, AppHandle, Manager};
+#[cfg(desktop)]
+use tauri::App;
+use tauri::{AppHandle, Manager};
 
 mod backup_service;
 mod credential_manager;
@@ -150,13 +154,18 @@ fn load_notes(app_handle: AppHandle) -> Result<HashMap<usize, String>, String> {
 #[tauri::command]
 fn close_window(app_handle: AppHandle) {
     info!("Closing the main window");
+    // Hiding windows is a desktop-only concept; no-op on mobile.
+    #[cfg(desktop)]
     if let Some(main_window) = app_handle.get_webview_window("main") {
         main_window
             .hide()
             .unwrap_or_else(|e| info!("Failed to hide window: {}", e));
     }
+    #[cfg(mobile)]
+    let _ = app_handle;
 }
 
+#[cfg(desktop)]
 fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
     let toggle = MenuItemBuilder::new("Toggle").id("toggle").build(app)?;
@@ -188,6 +197,7 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
     Ok(())
 }
 
+#[cfg(desktop)]
 fn toggle_window(app: &AppHandle) {
     let window = app.get_webview_window("main").unwrap();
     if window.is_visible().unwrap() {
@@ -252,6 +262,7 @@ pub fn run() {
             }
             logging::init_logger(app.app_handle())?;
             info!("Jot application starting up");
+            #[cfg(desktop)]
             configure_tray_menu(app).unwrap();
             Ok(())
         })

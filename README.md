@@ -1,5 +1,9 @@
 # Jot
 
+[![CI](https://github.com/afry23/jot/actions/workflows/ci.yml/badge.svg)](https://github.com/afry23/jot/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/afry23/jot)](https://github.com/afry23/jot/releases/latest)
+
 A minimal note-taking app for quick thoughts and ideas.
 
 ## Overview
@@ -15,14 +19,16 @@ Jot is a lightweight, minimalist note-taking application built with Tauri (Rust)
 - **Persistent Storage**: Automatic saving of your notes with backup support
 - **Keyboard Shortcuts**: Efficient navigation and text manipulation
 - **Global Shortcut**: Show/hide window from anywhere
-- **Cross-Platform**: Works on Windows and macOS
+- **Cross-Platform**: Windows, macOS, Linux and Android
 
 ## Installation
+
+Pre-built binaries for macOS, Windows, Linux and Android are on the [Releases page](https://github.com/afry23/jot/releases/latest).
 
 ### Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install) 1.70 or later
-- [Node.js](https://nodejs.org/) 20 or later
+- [Node.js](https://nodejs.org/) 22 or later
 - Tauri CLI: `cargo install tauri-cli --version "^2"`
 
 ### Building from Source
@@ -123,7 +129,7 @@ Jot is designed with the following principles in mind:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)

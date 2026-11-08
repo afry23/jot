@@ -176,4 +176,3 @@ pub async fn check_grammar(
 
     Ok(result)
 }
-

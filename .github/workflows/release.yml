@@ -1,0 +1,200 @@
+name: Release
+
+# Läuft beim Push eines Tags v*. Der getaggte Commit MUSS auf main liegen
+# und die Versionen in package.json / tauri.conf.json / Cargo.toml müssen zum Tag passen.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    name: Tag prüfen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag liegt auf main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} zeigt auf einen Commit, der nicht in main enthalten ist."
+            exit 1
+          fi
+
+      - name: Versionen passen zum Tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(jq -r .version package.json)
+          conf=$(jq -r .version src-tauri/tauri.conf.json)
+          cargo=$(grep -m1 '^version' src-tauri/Cargo.toml | cut -d'"' -f2)
+          echo "tag=$tag package.json=$pkg tauri.conf.json=$conf Cargo.toml=$cargo"
+          if [ "$tag" != "$pkg" ] || [ "$tag" != "$conf" ] || [ "$tag" != "$cargo" ]; then
+            echo "::error::Versionen stimmen nicht mit dem Tag überein."
+            exit 1
+          fi
+
+  create-release:
+    name: Draft-Release anlegen
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.create.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: create
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --generate-notes \
+            --title "Jot $GITHUB_REF_NAME" --verify-tag
+          # Draft-Releases sind nicht über /releases/tags/ abrufbar, daher Liste filtern
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.tag_name==\"$GITHUB_REF_NAME\") | .id" | head -n1)
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
+
+  build-desktop:
+    name: Desktop (${{ matrix.name }})
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS (Apple Silicon), os: macos-latest, args: "--target aarch64-apple-darwin", rust_targets: "aarch64-apple-darwin" }
+          - { name: macOS (Intel), os: macos-latest, args: "--target x86_64-apple-darwin", rust_targets: "x86_64-apple-darwin" }
+          - { name: Linux, os: ubuntu-22.04, args: "", rust_targets: "" }
+          - { name: Windows, os: windows-latest, args: "", rust_targets: "" }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux-Systemabhängigkeiten
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libdbus-1-dev libsecret-1-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: macOS-Signing/Notarization (siehe docs/RELEASING.md)
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+
+  build-android:
+    name: Android (APK + AAB)
+    needs: create-release
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: NDK installieren
+        run: |
+          sdkmanager "ndk;27.2.12479018"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Keystore einrichten
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          cat > src-tauri/gen/android/key.properties <<PROPS
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          storeFile=$RUNNER_TEMP/release.keystore
+          storePassword=$STORE_PASSWORD
+          PROPS
+
+      - name: Versionscode setzen
+        run: |
+          code=$(( ${{ github.run_number }} ))
+          name="${GITHUB_REF_NAME#v}"
+          printf 'tauri.android.versionName=%s\ntauri.android.versionCode=%s\n' "$name" "$code" \
+            > src-tauri/gen/android/app/tauri.properties
+
+      - run: npm ci
+      - run: npm run tauri android build -- --apk --aab
+
+      - name: Artefakte benennen
+        run: |
+          mkdir out
+          find src-tauri/gen/android/app/build/outputs -name '*.apk' -exec cp {} "out/Jot_${GITHUB_REF_NAME}_android.apk" \; -quit
+          find src-tauri/gen/android/app/build/outputs -name '*.aab' -exec cp {} "out/Jot_${GITHUB_REF_NAME}_android.aab" \; -quit
+          ls -l out
+          if [ "$HAS_KEYSTORE" != "true" ]; then
+            echo "::warning::Kein ANDROID_KEYSTORE_BASE64 Secret – APK/AAB sind UNSIGNIERT und nicht installierbar."
+          fi
+
+      - name: An Release anhängen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" out/* --clobber
+
+  publish:
+    name: Release veröffentlichen
+    needs: [build-desktop, build-android]
+    runs-on: ubuntu-latest
+    # Environment "release" hat Required Reviewers: Veröffentlichung erst nach manueller Freigabe
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
