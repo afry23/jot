@@ -17,6 +17,7 @@ Jot is a lightweight, minimalist note-taking application built with Tauri (Rust)
 - **Text Statistics**: Automatic word, character, and line counting
 - **Dark/Light Theme**: Comfortable writing experience in any lighting environment
 - **Persistent Storage**: Automatic saving of your notes with backup support
+- **WebDAV Sync**: Sync notes across devices via WebDAV (Settings → Sync); conflicts keep the older version as a copy on the server
 - **Keyboard Shortcuts**: Efficient navigation and text manipulation
 - **Global Shortcut**: Show/hide window from anywhere
 - **Cross-Platform**: Windows, macOS, Linux and Android

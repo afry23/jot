@@ -18,6 +18,8 @@ export async function saveNote(tabIndex: number, content: string) {
         tabIndex,
         content,
       });
+      // Let the WebDAV sync know there is something new to push
+      window.dispatchEvent(new CustomEvent("jot:note-saved"));
     }, 1000); // 1 second debounce
 
     return true;
@@ -104,7 +106,7 @@ export async function setStoragePath(path: string | null): Promise<void> {
 // For TypeScript
 declare global {
   interface Window {
-    savingTimeout: number | null;
+    savingTimeout: ReturnType<typeof setTimeout> | null;
   }
 }
 

@@ -10,81 +10,48 @@
     type DecorationSet,
     type ViewUpdate,
   } from "@codemirror/view";
-  import { EditorState, Compartment, StateEffect, StateField, RangeSetBuilder } from "@codemirror/state";
+  import {
+    EditorState,
+    Compartment,
+    StateEffect,
+    StateField,
+    RangeSetBuilder,
+  } from "@codemirror/state";
   import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
   import {
     HighlightStyle,
     syntaxHighlighting,
     syntaxTree,
   } from "@codemirror/language";
-  import {
-    history,
-    defaultKeymap,
-    historyKeymap,
-  } from "@codemirror/commands";
+  import { history, defaultKeymap, historyKeymap } from "@codemirror/commands";
   import { tags } from "@lezer/highlight";
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-shell";
   import { theme, fontSize } from "#lib/stores/settings";
-  import { spellCheckEnabled, type GrammarError } from "#lib/stores/languageServices";
+  import {
+    spellCheckEnabled,
+    type GrammarError,
+  } from "#lib/stores/languageServices";
   import { activeTab } from "#lib/stores/tabs";
   import { notes, updateNote } from "#lib/stores/notes";
   import { tabColors } from "#lib/utils/colors";
   import { saveNote } from "#lib/utils/persistence";
-  import { cursorPositions, scrollPositions } from "#lib/stores/cursorPostionStore";
+  import {
+    cursorPositions,
+    scrollPositions,
+  } from "#lib/stores/cursorPostionStore";
   import { getHeadingColorWithOpacity } from "#lib/utils/uiColors";
   import { getCodeBackground } from "#lib/utils/textFormatting";
+  import { autocompletion } from "@codemirror/autocomplete";
+  import {
+    codeBlocksExtension,
+    languageCompletion,
+  } from "#lib/utils/codeBlocks";
+  import { headingsExtension } from "#lib/utils/headings";
+  import { foldKeymap } from "@codemirror/language";
+  import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
-
-  // --- Hide-Marks Plugin: Syntax nur auf Cursor-Zeile sichtbar ---
-  const HIDE_MARKS = new Set([
-    "HeaderMark",
-    "EmphasisMark",
-    "CodeMark",
-    "QuoteMark",
-    "StrikethroughMark",
-    "LinkMark",
-    "URL",
-  ]);
-
-  function buildHideMarksDecos(v: EditorView): DecorationSet {
-    const { state } = v;
-    const sel = state.selection.main;
-    const fromLine = state.doc.lineAt(sel.from).number;
-    const toLine = state.doc.lineAt(sel.to).number;
-    const builder = new RangeSetBuilder<Decoration>();
-    for (const { from, to } of v.visibleRanges) {
-      syntaxTree(state).iterate({
-        from,
-        to,
-        enter(node) {
-          if (HIDE_MARKS.has(node.name)) {
-            const markLine = state.doc.lineAt(node.from).number;
-            if (markLine < fromLine || markLine > toLine) {
-              builder.add(node.from, node.to, Decoration.replace({}));
-            }
-          }
-        },
-      });
-    }
-    return builder.finish();
-  }
-
-  const hideMarksPlugin = ViewPlugin.fromClass(
-    class {
-      decorations: DecorationSet;
-      constructor(view: EditorView) {
-        this.decorations = buildHideMarksDecos(view);
-      }
-      update(update: ViewUpdate) {
-        if (update.docChanged || update.selectionSet || update.viewportChanged) {
-          this.decorations = buildHideMarksDecos(update.view);
-        }
-      }
-    },
-    { decorations: (v) => v.decorations }
-  );
 
   // --- Spell-Check via LanguageTool ---
 
@@ -117,9 +84,15 @@
         if (effect.is(setSpellErrors)) {
           const newErrors = effect.value;
           const builder = new RangeSetBuilder<Decoration>();
-          for (const { from, to } of newErrors.sort((a, b) => a.from - b.from)) {
+          for (const { from, to } of newErrors.sort(
+            (a, b) => a.from - b.from
+          )) {
             if (from < to) {
-              builder.add(from, to, Decoration.mark({ class: "cm-spell-error" }));
+              builder.add(
+                from,
+                to,
+                Decoration.mark({ class: "cm-spell-error" })
+              );
             }
           }
           decorations = builder.finish();
@@ -158,10 +131,13 @@
           return;
         }
         try {
-          const result = await invoke<{ matches: GrammarError[] }>("check_grammar", {
-            text,
-            language: "auto",
-          });
+          const result = await invoke<{ matches: GrammarError[] }>(
+            "check_grammar",
+            {
+              text,
+              language: "auto",
+            }
+          );
           if (!this.view.dom.isConnected) return;
           const errors: SpellError[] = result.matches.map((m) => ({
             from: m.offset,
@@ -182,70 +158,75 @@
 
   const spellHoverTooltip = hoverTooltip(
     (view, pos) => {
-    if (!view.state.field(spellErrorField, false)) return null;
-    const { errors } = view.state.field(spellErrorField);
-    const match = errors.find((e) => pos >= e.from && pos <= e.to);
-    if (!match) return null;
+      if (!view.state.field(spellErrorField, false)) return null;
+      const { errors } = view.state.field(spellErrorField);
+      const match = errors.find((e) => pos >= e.from && pos <= e.to);
+      if (!match) return null;
 
-    return {
-      pos: match.from,
-      end: match.to,
-      above: true,
-      create() {
-        const isDark = !!document.querySelector(".dark");
-        const dom = document.createElement("div");
-        dom.className = "cm-spell-tooltip";
-        dom.style.cssText = isDark
-          ? "background:#2d2d2d;color:#e0e0e0;border-color:rgba(255,255,255,0.12)"
-          : "background:#fff;color:#1a1a1a;border-color:rgba(0,0,0,0.12)";
+      return {
+        pos: match.from,
+        end: match.to,
+        above: true,
+        create() {
+          const isDark = !!document.querySelector(".dark");
+          const dom = document.createElement("div");
+          dom.className = "cm-spell-tooltip";
+          dom.style.cssText = isDark
+            ? "background:#2d2d2d;color:#e0e0e0;border-color:rgba(255,255,255,0.12)"
+            : "background:#fff;color:#1a1a1a;border-color:rgba(0,0,0,0.12)";
 
-        if (match.error.replacements.length === 0) {
-          const none = document.createElement("span");
-          none.className = "cm-spell-tooltip-empty";
-          none.textContent = match.error.message;
-          dom.appendChild(none);
-        } else {
-          match.error.replacements.slice(0, 5).forEach((r) => {
-            const btn = document.createElement("button");
-            btn.className = "cm-spell-suggestion";
-            btn.style.cssText = isDark
-              ? "border-color:rgba(255,255,255,0.18);color:#e0e0e0"
-              : "border-color:rgba(0,0,0,0.15);color:#1a1a1a";
-            btn.textContent = r.value;
-            btn.onmousedown = (e) => {
-              e.preventDefault();
-              const { errors } = view.state.field(spellErrorField);
-              const changes = view.state.changes({ from: match.from, to: match.to, insert: r.value });
-              const remaining = errors
-                .filter((err) => err.from !== match.from || err.to !== match.to)
-                .map((err) => ({
-                  ...err,
-                  from: changes.mapPos(err.from),
-                  to: changes.mapPos(err.to, 1),
-                }))
-                .filter((err) => err.from < err.to);
-              view.dispatch({
-                changes: { from: match.from, to: match.to, insert: r.value },
-                effects: setSpellErrors.of(remaining),
-              });
-            };
-            dom.appendChild(btn);
-          });
-        }
+          if (match.error.replacements.length === 0) {
+            const none = document.createElement("span");
+            none.className = "cm-spell-tooltip-empty";
+            none.textContent = match.error.message;
+            dom.appendChild(none);
+          } else {
+            match.error.replacements.slice(0, 5).forEach((r) => {
+              const btn = document.createElement("button");
+              btn.className = "cm-spell-suggestion";
+              btn.style.cssText = isDark
+                ? "border-color:rgba(255,255,255,0.18);color:#e0e0e0"
+                : "border-color:rgba(0,0,0,0.15);color:#1a1a1a";
+              btn.textContent = r.value;
+              btn.onmousedown = (e) => {
+                e.preventDefault();
+                const { errors } = view.state.field(spellErrorField);
+                const changes = view.state.changes({
+                  from: match.from,
+                  to: match.to,
+                  insert: r.value,
+                });
+                const remaining = errors
+                  .filter(
+                    (err) => err.from !== match.from || err.to !== match.to
+                  )
+                  .map((err) => ({
+                    ...err,
+                    from: changes.mapPos(err.from),
+                    to: changes.mapPos(err.to, 1),
+                  }))
+                  .filter((err) => err.from < err.to);
+                view.dispatch({
+                  changes: { from: match.from, to: match.to, insert: r.value },
+                  effects: setSpellErrors.of(remaining),
+                });
+              };
+              dom.appendChild(btn);
+            });
+          }
 
-        return { dom };
-      },
-    };
-  },
-  {
-    hideOn: (tr) => tr.effects.some((e) => e.is(setSpellErrors)),
-  }
+          return { dom };
+        },
+      };
+    },
+    {
+      hideOn: (tr) => tr.effects.some((e) => e.is(setSpellErrors)),
+    }
   );
 
   function buildSpellCheckExtensions() {
     return [spellErrorField, spellCheckPlugin, spellHoverTooltip];
   }
-
 
   // --- Zeilen-Hervorhebung nach Tab-Wechsel ---
   const setHighlightLine = StateEffect.define<number | null>();
@@ -281,6 +262,7 @@
   let view: EditorView | null = null;
   let showLinkModal = false;
   let linkModalInitialText = "";
+  let linkModalInitialHref = "";
 
   const fontSizeMap: Record<string, string> = {
     small: "14px",
@@ -344,7 +326,7 @@
         textDecorationStyle: "dotted",
         cursor: "pointer",
       },
-      { tag: tags.url, color: color, opacity: "0.7" },
+      { tag: tags.url, color: syntaxMarkColor },
       // Inline code
       {
         tag: tags.monospace,
@@ -360,9 +342,48 @@
         color: isDark ? "#BBBBBB" : "#666666",
         fontStyle: "italic",
       },
+      // Code tokens (in Fenced Code Blocks)
+      {
+        tag: [tags.keyword, tags.modifier, tags.operatorKeyword],
+        color: isDark ? "#C792EA" : "#7c3aed",
+      },
+      {
+        tag: [tags.string, tags.special(tags.string), tags.regexp],
+        color: isDark ? "#C3E88D" : "#15803d",
+      },
+      {
+        tag: [tags.number, tags.bool, tags.null, tags.atom],
+        color: isDark ? "#F78C6C" : "#c2410c",
+      },
+      {
+        tag: [tags.comment, tags.lineComment, tags.blockComment],
+        color: isDark ? "#7f8c8d" : "#6b7280",
+        fontStyle: "italic",
+      },
+      {
+        tag: [
+          tags.function(tags.variableName),
+          tags.function(tags.propertyName),
+          tags.definition(tags.variableName),
+        ],
+        color: isDark ? "#82AAFF" : "#1d4ed8",
+      },
+      {
+        tag: [tags.typeName, tags.className, tags.namespace],
+        color: isDark ? "#FFCB6B" : "#b45309",
+      },
+      {
+        tag: [tags.propertyName, tags.attributeName],
+        color: isDark ? "#89DDFF" : "#0e7490",
+      },
+      {
+        tag: [tags.operator, tags.punctuation],
+        color: isDark ? "#89DDFF" : "#475569",
+      },
+      { tag: tags.tagName, color: isDark ? "#F07178" : "#be123c" },
       // Syntax marks (**, *, #, `, >, -) — dimmed so they fade into background
       {
-        tag: tags.processingInstruction,
+        tag: [tags.processingInstruction, tags.labelName],
         color: syntaxMarkColor,
         fontWeight: "normal",
         fontStyle: "normal",
@@ -376,7 +397,9 @@
     const caretColor = tabColors[$activeTab];
     const textColor = isDark ? "#E0E0E0" : "#1a1a1a";
     const selBg = isDark ? "rgba(255,255,255,0.13)" : "rgba(0,0,0,0.09)";
-    const activeLineBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.025)";
+    const activeLineBg = isDark
+      ? "rgba(255,255,255,0.03)"
+      : "rgba(0,0,0,0.025)";
 
     return EditorView.theme(
       {
@@ -389,7 +412,7 @@
           caretColor,
           fontFamily:
             "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          padding: "20px 28px 200px",
+          padding: "20px 28px 200px 44px",
           lineHeight: "1.7",
           color: textColor,
           maxWidth: "800px",
@@ -404,6 +427,37 @@
         "::selection": { backgroundColor: selBg },
         ".cm-activeLine": { backgroundColor: activeLineBg },
         ".cm-gutters": { display: "none" },
+        ".cm-tooltip.cm-tooltip-autocomplete": {
+          backgroundColor: isDark ? "#252525" : "#ffffff",
+          color: textColor,
+          border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)"}`,
+          borderRadius: "10px",
+          padding: "4px",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
+        },
+        ".cm-tooltip-autocomplete > ul": {
+          fontFamily: "inherit",
+          fontSize: "0.95em",
+        },
+        ".cm-tooltip-autocomplete > ul > li": {
+          padding: "4px 12px",
+          borderRadius: "6px",
+        },
+        ".cm-tooltip-autocomplete > ul > li[aria-selected]": {
+          backgroundColor: isDark
+            ? "rgba(255,255,255,0.12)"
+            : "rgba(0,0,0,0.08)",
+          color: textColor,
+        },
+        ".cm-completionDetail": {
+          opacity: "0.5",
+          marginLeft: "0.8em",
+          fontStyle: "normal",
+        },
+        ".cm-completionMatchedText": {
+          textDecoration: "none",
+          fontWeight: "bold",
+        },
         ".cm-scroller": { overflow: "auto", height: "100%" },
         ".cm-line": { padding: "0 4px" },
         "&.cm-focused": { outline: "none" },
@@ -494,7 +548,18 @@
   function openLinkModal(): boolean {
     if (!view) return false;
     const { from, to } = view.state.selection.main;
-    linkModalInitialText = view.state.sliceDoc(from, to);
+    const selected = view.state.sliceDoc(from, to).trim();
+    if (/^(?:[a-z][a-z0-9+.-]*:\/\/|mailto:)\S+$/i.test(selected)) {
+      // Selektierte URL -> als Link-URL vorbelegen, Text wird eingegeben
+      linkModalInitialHref = selected;
+      linkModalInitialText = "";
+    } else if (/^www\.\S+$/i.test(selected)) {
+      linkModalInitialHref = `https://${selected}`;
+      linkModalInitialText = "";
+    } else {
+      linkModalInitialHref = "";
+      linkModalInitialText = view.state.sliceDoc(from, to);
+    }
     showLinkModal = true;
     return true;
   }
@@ -568,9 +633,7 @@
     if (!view) return;
     const pos = $cursorPositions[$activeTab];
     const safePos =
-      typeof pos === "number"
-        ? Math.min(pos, view.state.doc.length)
-        : 0;
+      typeof pos === "number" ? Math.min(pos, view.state.doc.length) : 0;
 
     // Cursor setzen, zur Position scrollen und Zeile kurz hervorheben
     view.dispatch({
@@ -595,8 +658,10 @@
       state: EditorState.create({
         doc: content,
         extensions: [
-          markdown({ base: markdownLanguage }),
-          hideMarksPlugin,
+          markdown({ base: markdownLanguage, codeLanguages: languages }),
+          codeBlocksExtension(),
+          headingsExtension(),
+          autocompletion({ override: [languageCompletion], icons: false }),
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
           editorThemeCompartment.of(buildEditorTheme()),
@@ -629,7 +694,10 @@
                   let child = node.firstChild;
                   while (child) {
                     if (child.name === "URL") {
-                      const href = editorView.state.sliceDoc(child.from, child.to);
+                      const href = editorView.state.sliceDoc(
+                        child.from,
+                        child.to
+                      );
                       if (/^https?:\/\/|^mailto:/i.test(href)) {
                         event.preventDefault();
                         open(href).catch((e) =>
@@ -656,6 +724,7 @@
             { key: "Mod-t", run: () => insertTimestamp() },
             { key: "Tab", run: () => indentLine() },
             { key: "Shift-Tab", run: () => unindentLine() },
+            ...foldKeymap,
             ...historyKeymap,
             ...defaultKeymap,
           ]),
@@ -691,6 +760,7 @@
 
 {#if showLinkModal}
   <LinkModal
+    initialHref={linkModalInitialHref}
     initialText={linkModalInitialText}
     on:submit={handleLinkSubmit}
     on:cancel={handleLinkCancel}
@@ -719,9 +789,180 @@
   }
 
   @keyframes -global-cm-line-flash {
-    0%   { background-color: rgba(255, 200, 80, 0.28); }
-    40%  { background-color: rgba(255, 200, 80, 0.18); }
-    100% { background-color: transparent; }
+    0% {
+      background-color: rgba(255, 200, 80, 0.28);
+    }
+    40% {
+      background-color: rgba(255, 200, 80, 0.18);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  :global(.cm-codeblock-line) {
+    font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+    background: rgba(128, 128, 128, 0.1);
+    padding-left: 12px !important;
+    position: relative;
+  }
+  :global(.cm-codeblock-fence) {
+    opacity: 0.55;
+  }
+  :global(.cm-codeblock-numbered) {
+    padding-left: 44px !important;
+  }
+  :global(.cm-codeblock-numbered::before) {
+    content: attr(data-ln);
+    position: absolute;
+    left: 0;
+    width: 32px;
+    text-align: right;
+    opacity: 0.45;
+    user-select: none;
+  }
+  :global(.cm-codeblock-copy),
+  :global(.cm-codeblock-ln) {
+    position: absolute;
+    top: 0;
+    opacity: 0.4;
+    transition:
+      opacity 0.12s,
+      background 0.12s;
+  }
+  :global(.cm-codeblock-copy) {
+    left: -32px;
+  }
+  :global(.cm-codeblock-ln) {
+    right: 6px;
+    top: 2px;
+  }
+  :global(.cm-codeblock-copy:hover),
+  :global(.cm-codeblock-ln:hover),
+  :global(.cm-codeblock-btn-on) {
+    opacity: 1;
+  }
+  :global(.cm-codeblock-btn) {
+    font: inherit;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  :global(.cm-codeblock-btn:hover) {
+    background: rgba(128, 128, 128, 0.25);
+  }
+  :global(.cm-codeblock-btn-on) {
+    background: rgba(128, 128, 128, 0.35);
+  }
+
+  :global(.cm-heading-line) {
+    position: relative;
+  }
+  :global(.cm-heading-tools) {
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.12s;
+    user-select: none;
+  }
+  :global(.cm-heading-line:hover .cm-heading-tools),
+  :global(.cm-heading-line-active .cm-heading-tools),
+  :global(.cm-heading-tools-folded) {
+    opacity: 0.6;
+  }
+  :global(.cm-heading-tools:hover) {
+    opacity: 1 !important;
+  }
+  :global(.cm-heading-fold),
+  :global(.cm-heading-level) {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 3px;
+    cursor: pointer;
+  }
+  :global(.cm-heading-fold) {
+    display: flex;
+    align-items: center;
+  }
+  :global(.cm-heading-fold svg) {
+    transition: transform 0.12s;
+  }
+  :global(.cm-heading-fold-closed svg) {
+    transform: rotate(-90deg);
+  }
+  :global(.cm-heading-fold:hover),
+  :global(.cm-heading-level:hover) {
+    background: rgba(128, 128, 128, 0.25);
+  }
+  :global(.cm-heading-menu) {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 64px;
+    padding: 4px;
+    margin-top: 4px;
+    background: var(--cm-tooltip-bg, #fff);
+    color: #222;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+  :global(.cm-heading-menu-item) {
+    font: inherit;
+    font-size: 12px;
+    color: inherit;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  :global(.cm-heading-menu-item:hover) {
+    background: rgba(128, 128, 128, 0.2);
+  }
+  :global(.cm-heading-menu-active) {
+    font-weight: 700;
+  }
+  :global(.cm-heading-menu-text) {
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    border-radius: 0 0 4px 4px;
+    margin-top: 2px;
+  }
+  :global(.cm-heading-fold-placeholder) {
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.2);
+    cursor: pointer;
+    opacity: 0.7;
   }
 
   :global(.cm-spell-error) {
