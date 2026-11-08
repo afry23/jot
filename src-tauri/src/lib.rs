@@ -197,9 +197,13 @@ fn toggle_window(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    let _tauri_app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_shell::init());
+    // Android hat keinen keyring-Store: Zugangsdaten laufen über den Android Keystore.
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_secure_storage::init());
+    let _tauri_app = builder
         .on_window_event(|_window, _event| {
             // Desktop: Close-Request versteckt das Fenster im Tray statt es zu schließen.
             #[cfg(desktop)]
