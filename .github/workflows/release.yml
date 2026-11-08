@@ -17,7 +17,7 @@ jobs:
     name: Tag prüfen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -50,7 +50,7 @@ jobs:
     outputs:
       release_id: ${{ steps.create.outputs.release_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: create
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,7 +77,7 @@ jobs:
           - { name: Linux, os: ubuntu-22.04, args: "", rust_targets: "" }
           - { name: Windows, os: windows-latest, args: "", rust_targets: "" }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Linux-Systemabhängigkeiten
         if: runner.os == 'Linux'
@@ -122,7 +122,7 @@ jobs:
     env:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
