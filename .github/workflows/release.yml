@@ -55,11 +55,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --generate-notes \
-            --title "Jot $GITHUB_REF_NAME" --verify-tag
-          # Draft-Releases sind nicht über /releases/tags/ abrufbar, daher Liste filtern
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.tag_name==\"$GITHUB_REF_NAME\") | .id" | head -n1)
+          # Draft per API anlegen: die Antwort enthält direkt die ID (Draft-Releases sind
+          # nicht über /releases/tags/ abrufbar, und eine Listen-Abfrage lieferte eine leere ID).
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" -X POST \
+            -f tag_name="$GITHUB_REF_NAME" -f name="Jot $GITHUB_REF_NAME" \
+            -F draft=true -F generate_release_notes=true --jq .id)
+          [ -n "$id" ] || { echo "::error::Release-ID leer"; exit 1; }
           echo "release_id=$id" >> "$GITHUB_OUTPUT"
 
   build-desktop:
@@ -102,13 +103,6 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: macOS-Signing/Notarization (siehe docs/RELEASING.md)
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
@@ -168,6 +162,21 @@ jobs:
           name="${GITHUB_REF_NAME#v}"
           printf 'tauri.android.versionName=%s\ntauri.android.versionCode=%s\n' "$name" "$code" \
             > src-tauri/gen/android/app/tauri.properties
+
+      - name: Gradle-Wrapper cachen
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-wrapper-${{ hashFiles('src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Gradle-Wrapper laden (mit Retry gegen Netzwerk-Timeouts)
+        working-directory: src-tauri/gen/android
+        run: |
+          for i in 1 2 3 4 5; do
+            ./gradlew --version && exit 0
+            echo "Versuch $i fehlgeschlagen, warte..."; sleep $((i * 15))
+          done
+          exit 1
 
       - run: npm ci
       - run: npm run tauri android build -- --apk --aab
