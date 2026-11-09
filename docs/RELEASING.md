@@ -44,9 +44,9 @@ Releases are cut from `main` via a version-bump PR and a tag. Replace `0.4.0` be
    `Release veröffentlichen` job.
 8. **Verify.** The release is public, all platform artifacts are attached, and the Android APK/AAB is signed.
 
-If the workflow fails or the tag is wrong, delete the draft release and the tag
-(`git push origin :refs/tags/v0.4.0 && git tag -d v0.4.0`), fix, and re-tag.
-A tag that points to a published release must not be moved; publish a new patch version instead.
+If the workflow fails after tagging: tags are protected by a repository ruleset and **cannot be deleted
+or moved**. Fix the problem on `main`, delete the draft release (`gh release delete vX.Y.Z --yes`) and
+release a new patch version (e.g. `v0.4.0` failed → `v0.4.1`). Never reuse a tag.
 
 ## Secrets (repository settings → Secrets and variables → Actions)
 
