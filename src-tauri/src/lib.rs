@@ -162,9 +162,11 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
     let tray_icon = app.tray_by_id("main").unwrap();
 
     tray_icon.set_menu(Some(tray_menu))?;
+    // Wie in nunc: Menü nur per Rechtsklick, Linksklick schaltet das Fenster um.
+    tray_icon.set_show_menu_on_left_click(false)?;
 
     tray_icon.on_menu_event(|app, event| match event.id.as_ref() {
-        "quit" => std::process::exit(0),
+        "quit" => app.exit(0),
         "toggle" => toggle_window(app),
         _ => {}
     });
@@ -176,8 +178,7 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
             ..
         } = event
         {
-            let app = tray.app_handle();
-            toggle_window(app.app_handle());
+            toggle_window(tray.app_handle());
         }
     });
 
@@ -185,20 +186,39 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
 }
 
 #[cfg(desktop)]
+fn show_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[cfg(desktop)]
 fn toggle_window(app: &AppHandle) {
-    let window = app.get_webview_window("main").unwrap();
-    if window.is_visible().unwrap() {
-        window.hide().unwrap();
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let visible = window.is_visible().unwrap_or(false);
+    let minimized = window.is_minimized().unwrap_or(false);
+    if visible && !minimized {
+        let _ = window.hide();
     } else {
-        window.show().unwrap();
-        window.set_focus().unwrap();
+        show_window(app);
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // Single-Instance muss als erstes Plugin registriert werden.
+    // Zweiter Start bringt stattdessen das bestehende Fenster nach vorn.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        show_window(app);
+    }));
+    let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init());
     // Android hat keinen keyring-Store: Zugangsdaten laufen über den Android Keystore.
