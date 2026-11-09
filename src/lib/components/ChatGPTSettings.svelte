@@ -7,7 +7,7 @@
     loadChatGPTConfig,
     saveChatGPTConfig,
   } from "#lib/stores/chatgptService";
-    import FormField from "./FormField.svelte";
+  import FormField from "./FormField.svelte";
 
   // Local state
   let apiKey: string = "";
@@ -19,7 +19,7 @@
   // Success/error messages
   let saveSuccess: boolean = false;
   let saveError: string | null = null;
-  let saveTimeout: number | null = null;
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Model options
   const modelOptions = [
@@ -58,7 +58,7 @@
         model,
         endpoint,
         maxTokens,
-        temperature,
+        temperature
       );
 
       if (success) {
@@ -93,7 +93,13 @@
 
 <div class="space-y-6">
   <div>
-    <FormField id="api-key" label="API Key" type="password" bind:value={apiKey} placeholder="Enter your OpenAI API key"/>
+    <FormField
+      id="api-key"
+      label="API Key"
+      type="password"
+      bind:value={apiKey}
+      placeholder="Enter your OpenAI API key"
+    />
     <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
       Required to use ChatGPT features
     </div>
@@ -186,9 +192,9 @@
       >
         <FontAwesomeIcon icon="undo" />
       </button>
-    <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-      Only change if you're using a proxy or custom endpoint
-    </div>
+      <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        Only change if you're using a proxy or custom endpoint
+      </div>
     </div>
   </div>
 

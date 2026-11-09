@@ -19,6 +19,7 @@ mod credential_manager;
 mod language_service;
 mod logging;
 mod storage_service;
+mod webdav_service;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[allow(dead_code)]
@@ -151,20 +152,6 @@ fn load_notes(app_handle: AppHandle) -> Result<HashMap<usize, String>, String> {
     Ok(notes)
 }
 
-#[tauri::command]
-fn close_window(app_handle: AppHandle) {
-    info!("Closing the main window");
-    // Hiding windows is a desktop-only concept; no-op on mobile.
-    #[cfg(desktop)]
-    if let Some(main_window) = app_handle.get_webview_window("main") {
-        main_window
-            .hide()
-            .unwrap_or_else(|e| info!("Failed to hide window: {}", e));
-    }
-    #[cfg(mobile)]
-    let _ = app_handle;
-}
-
 #[cfg(desktop)]
 fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
@@ -190,7 +177,7 @@ fn configure_tray_menu(app: &App) -> Result<(), tauri::Error> {
         } = event
         {
             let app = tray.app_handle();
-            toggle_window(&app.app_handle());
+            toggle_window(app.app_handle());
         }
     });
 
@@ -211,9 +198,21 @@ fn toggle_window(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    let _tauri_app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_shell::init());
+    // Android hat keinen keyring-Store: Zugangsdaten laufen über den Android Keystore.
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_secure_storage::init());
+    builder
+        .on_window_event(|_window, _event| {
+            // Desktop: Close-Request versteckt das Fenster im Tray statt es zu schließen.
+            #[cfg(desktop)]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                api.prevent_close();
+                let _ = _window.hide();
+            }
+        })
         .setup(|app| {
             // Windows: DWM folgt System-Theme nicht automatisch → explizit setzen
             #[cfg(target_os = "windows")]
@@ -248,11 +247,10 @@ pub fn run() {
                     .with_handler({
                         let app_handle = app_handle.clone();
                         move |_app, shortcut, event| {
-                            if shortcut == &ctrl_j_shortcut {
-                                if event.state() == ShortcutState::Released {
+                            if shortcut == &ctrl_j_shortcut
+                                && event.state() == ShortcutState::Released {
                                    toggle_window(&app_handle);
                                 }
-                            }
                         }
                     })
                     .build(),
@@ -272,7 +270,6 @@ pub fn run() {
             load_settings,
             save_active_tab,
             load_notes,
-            close_window,
             // Backup service commands
             backup_service::create_backup,
             backup_service::list_backups,
@@ -298,7 +295,12 @@ pub fn run() {
             language_service::save_language_tool_config,
             language_service::check_grammar,
             storage_service::get_storage_settings,
-            storage_service::set_storage_path
+            storage_service::set_storage_path,
+            credential_manager::has_webdav_credential,
+            webdav_service::get_webdav_config,
+            webdav_service::save_webdav_config,
+            webdav_service::test_webdav_connection,
+            webdav_service::sync_webdav
         ])
         .run(context)
         .expect("error while running tauri application");
