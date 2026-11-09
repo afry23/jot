@@ -4,7 +4,7 @@
 
 ## Checkliste
 
-- [ ] `npm run check` zeigt keine neuen Fehler
+- [ ] `npm run check` läuft ohne Fehler
 - [ ] `cargo test` (in `src-tauri`) läuft ohne Fehler
 - [ ] UI-Änderungen getestet (Screenshot beigefügt, falls sichtbar)
 - [ ] Doku / README angepasst, falls nötig
