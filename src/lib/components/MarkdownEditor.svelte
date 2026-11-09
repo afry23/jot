@@ -23,7 +23,13 @@
     syntaxHighlighting,
     syntaxTree,
   } from "@codemirror/language";
-  import { history, defaultKeymap, historyKeymap } from "@codemirror/commands";
+  import {
+    history,
+    defaultKeymap,
+    historyKeymap,
+    undo,
+    redo,
+  } from "@codemirror/commands";
   import { tags } from "@lezer/highlight";
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-shell";
@@ -52,6 +58,7 @@
   import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
   import LinkModal from "./LinkModal.svelte";
+  import EditorToolbar from "./EditorToolbar.svelte";
 
   // --- Spell-Check via LanguageTool ---
 
@@ -261,6 +268,7 @@
   let editorContainer: HTMLElement;
   let view: EditorView | null = null;
   let showLinkModal = false;
+  let hasSelection = false;
   let linkModalInitialText = "";
   let linkModalInitialHref = "";
 
@@ -611,9 +619,54 @@
     return true;
   }
 
+  // --- Toolbar ---
+
+  function handleToolbarAction(event: CustomEvent<string>) {
+    if (!view) return;
+    switch (event.detail) {
+      case "bold":
+        if (view.state.selection.main.empty) return;
+        toggleWrap("**");
+        break;
+      case "italic":
+        if (view.state.selection.main.empty) return;
+        toggleWrap("*");
+        break;
+      case "strike":
+        if (view.state.selection.main.empty) return;
+        toggleWrap("~~");
+        break;
+      case "code":
+        toggleWrap("`");
+        break;
+      case "link":
+        openLinkModal();
+        return; // Fokus liegt danach im Modal
+      case "timestamp":
+        insertTimestamp();
+        break;
+      case "indent":
+        indentLine();
+        break;
+      case "outdent":
+        unindentLine();
+        break;
+      case "undo":
+        undo(view);
+        break;
+      case "redo":
+        redo(view);
+        break;
+    }
+    view.focus();
+  }
+
   // --- Persistence ---
 
   function handleUpdate(update: ViewUpdate) {
+    if (update.selectionSet || update.docChanged) {
+      hasSelection = !update.state.selection.main.empty;
+    }
     if (!update.docChanged) return;
     const content = update.state.doc.toString();
     updateNote($activeTab, content);
@@ -719,6 +772,7 @@
           keymap.of([
             { key: "Mod-b", run: () => toggleWrap("**") },
             { key: "Mod-i", run: () => toggleWrap("*") },
+            { key: "Mod-Shift-x", run: () => toggleWrap("~~") },
             { key: "Mod-`", run: () => toggleWrap("`") },
             { key: "Mod-k", run: () => openLinkModal() },
             { key: "Mod-t", run: () => insertTimestamp() },
@@ -756,7 +810,10 @@
   });
 </script>
 
-<div class="editor-wrapper" bind:this={editorContainer}></div>
+<div class="editor-root">
+  <div class="editor-wrapper" bind:this={editorContainer}></div>
+  <EditorToolbar {hasSelection} on:action={handleToolbarAction} />
+</div>
 
 {#if showLinkModal}
   <LinkModal
@@ -768,8 +825,17 @@
 {/if}
 
 <style>
-  .editor-wrapper {
+  .editor-root {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    width: 100%;
+  }
+
+  .editor-wrapper {
+    flex: 1;
+    min-height: 0;
     width: 100%;
     overflow: hidden;
   }
