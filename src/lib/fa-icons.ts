@@ -47,6 +47,7 @@ import {
   faRotateLeft,
   faRotateRight,
   faStrikethrough,
+  faEllipsis,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Add all icons to the library
@@ -96,5 +97,6 @@ library.add(
   faOutdent,
   faRotateLeft,
   faRotateRight,
-  faStrikethrough
+  faStrikethrough,
+  faEllipsis
 );
