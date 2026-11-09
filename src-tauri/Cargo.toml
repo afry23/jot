@@ -1,6 +1,6 @@
 [package]
 name = "jot"
-version = "0.4.1"
+version = "0.5.0"
 description = "A simple note-taking app"
 authors = ["afry"]
 license = "GPL-3.0-only"
