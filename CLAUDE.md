@@ -11,6 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run Rust tests: `cargo test` (in src-tauri directory)
 - Run single Rust test: `cargo test test_name` (in src-tauri directory)
 
+## Pre-Commit / Pre-Push Checks
+- **Vor jedem Commit**:
+  - Rust: `cargo fmt` (in src-tauri directory)
+  - TypeScript/Svelte: `npx prettier --write <geänderte Dateien>` (Config: `.prettierrc`)
+- **Vor jedem Push**: `cargo clippy` (in src-tauri directory) muss ohne Warnungen/Fehler laufen.
+
 ## Code Style Guidelines
 - **TypeScript/Svelte**: Use TypeScript for type safety. Follow Svelte component structure.
 - **Rust**: Follow Rust idioms, use Result for error handling, employ log macros.
