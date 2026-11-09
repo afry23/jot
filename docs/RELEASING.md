@@ -64,10 +64,14 @@ Create a keystore once:
 **Back it up** – losing it means no more updates for existing installs.
 Without these secrets the Android artifacts are unsigned.
 
-### macOS (optional; without them the app is unsigned and Gatekeeper warns)
+### macOS
 
-`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
-`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`.
+Builds are unsigned (no Apple Developer account); Gatekeeper warns on first launch.
+The workflow deliberately does not pass any `APPLE_*` variables: even empty values make
+Tauri try to import a signing certificate and fail the build. To enable signing later, add
+`APPLE_CERTIFICATE` (base64 of the `.p12`), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
+`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` as secrets **and** re-add them to the
+`tauri-action` step's `env` in `release.yml`.
 
 ### Windows
 
