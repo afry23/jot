@@ -49,7 +49,7 @@
     "prosemirror-markdown": "^1.13.2",
     "prosemirror-state": "^1.4.3",
     "prosemirror-view": "^1.39.3",
-    "svelte-spa-router": "^4.0.1",
+    "svelte-spa-router": "^5.1.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.15",
     "tw-animate-css": "^1.2.4"
