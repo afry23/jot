@@ -5,6 +5,36 @@
 
   export let hasSelection = false;
 
+  const STORAGE_KEY = "jot-toolbar-collapsed";
+
+  // Vom Nutzer gewählter Zustand (persistiert)
+  let collapsed =
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem(STORAGE_KEY) === "true";
+  // Bei Selektion automatisch eingeblendet, solange die Selektion besteht
+  let autoShown = false;
+  let prevHasSelection = false;
+
+  $: {
+    if (hasSelection && !prevHasSelection && collapsed) autoShown = true;
+    if (!hasSelection) autoShown = false;
+    prevHasSelection = hasSelection;
+  }
+
+  $: visible = !collapsed || autoShown;
+
+  function toggle() {
+    if (visible) {
+      collapsed = true;
+      autoShown = false;
+    } else {
+      collapsed = false;
+    }
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, String(collapsed));
+    }
+  }
+
   const dispatch = createEventDispatcher<{ action: string }>();
 
   type Item = {
@@ -57,22 +87,46 @@
   }
 </script>
 
-<div class="toolbar" role="toolbar" aria-label="Formatting">
+<div
+  class="toolbar"
+  class:collapsed={!visible}
+  role="toolbar"
+  aria-label="Formatting"
+>
+  <button
+    type="button"
+    class="tool toggle"
+    title={visible ? "Hide toolbar" : "Show toolbar"}
+    aria-label={visible ? "Hide toolbar" : "Show toolbar"}
+    aria-expanded={visible}
+    on:pointerdown={keepFocus}
+    on:mousedown={keepFocus}
+    on:click={toggle}
+  >
+    <!-- {#key}: FontAwesomeIcon aktualisiert das Icon bei Prop-Änderung nicht -->
+    {#key visible}
+      <FontAwesomeIcon icon={visible ? "times" : "ellipsis"} />
+    {/key}
+  </button>
   {#each groups as group, i}
-    {#if i > 0}<span class="separator" aria-hidden="true"></span>{/if}
+    {#if visible}
+      <span class="separator" aria-hidden="true"></span>
+    {/if}
     {#each group as item}
-      <button
-        type="button"
-        class="tool"
-        disabled={item.needsSelection && !hasSelection}
-        title={item.label}
-        aria-label={item.label}
-        on:pointerdown={keepFocus}
-        on:mousedown={keepFocus}
-        on:click={() => dispatch("action", item.action)}
-      >
-        <FontAwesomeIcon icon={item.icon} />
-      </button>
+      {#if visible}
+        <button
+          type="button"
+          class="tool"
+          disabled={item.needsSelection && !hasSelection}
+          title={item.label}
+          aria-label={item.label}
+          on:pointerdown={keepFocus}
+          on:mousedown={keepFocus}
+          on:click={() => dispatch("action", item.action)}
+        >
+          <FontAwesomeIcon icon={item.icon} />
+        </button>
+      {/if}
     {/each}
   {/each}
 </div>
@@ -97,6 +151,13 @@
     border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     color: #444;
+  }
+
+  /* Eingeklappt: nur Toggle-Button, unten rechts */
+  .toolbar.collapsed {
+    left: auto;
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    transform: none;
   }
 
   :global(body.dark) .toolbar {
