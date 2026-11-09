@@ -3,6 +3,7 @@ export const shortcuts = [
   { key: "Ctrl+d", action: "Toggle dark/light theme" },
   { key: "Ctrl+b", action: "Bold text" },
   { key: "Ctrl+i", action: "Italic text" },
+  { key: "Ctrl+Shift+x", action: "Strikethrough text" },
   { key: "Ctrl+t", action: "Insert timestamp" },
   { key: "Ctrl+`", action: "Inline code" },
   { key: "Ctrl+k", action: "Insert Link" },

@@ -37,6 +37,16 @@ import {
   faBrain,
   faMagic,
   faSpellCheck,
+  faBold,
+  faItalic,
+  faCode,
+  faLink,
+  faClock,
+  faIndent,
+  faOutdent,
+  faRotateLeft,
+  faRotateRight,
+  faStrikethrough,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Add all icons to the library
@@ -76,5 +86,15 @@ library.add(
   faRobot,
   faBrain,
   faMagic,
-  faSpellCheck
+  faSpellCheck,
+  faBold,
+  faItalic,
+  faCode,
+  faLink,
+  faClock,
+  faIndent,
+  faOutdent,
+  faRotateLeft,
+  faRotateRight,
+  faStrikethrough
 );
