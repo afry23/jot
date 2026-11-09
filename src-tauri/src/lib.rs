@@ -19,6 +19,7 @@ mod credential_manager;
 mod language_service;
 mod logging;
 mod storage_service;
+mod webdav_service;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[allow(dead_code)]
@@ -294,7 +295,12 @@ pub fn run() {
             language_service::save_language_tool_config,
             language_service::check_grammar,
             storage_service::get_storage_settings,
-            storage_service::set_storage_path
+            storage_service::set_storage_path,
+            credential_manager::has_webdav_credential,
+            webdav_service::get_webdav_config,
+            webdav_service::save_webdav_config,
+            webdav_service::test_webdav_connection,
+            webdav_service::sync_webdav
         ])
         .run(context)
         .expect("error while running tauri application");
