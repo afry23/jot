@@ -711,7 +711,12 @@
       state: EditorState.create({
         doc: content,
         extensions: [
-          markdown({ base: markdownLanguage, codeLanguages: languages }),
+          markdown({
+            base: markdownLanguage,
+            codeLanguages: languages,
+            // Setext-Headings aus: "Text" + "-" in nächster Zeile würde sonst zur H2
+            extensions: { remove: ["SetextHeading"] },
+          }),
           codeBlocksExtension(),
           headingsExtension(),
           autocompletion({ override: [languageCompletion], icons: false }),
