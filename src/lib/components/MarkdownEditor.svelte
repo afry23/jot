@@ -55,6 +55,7 @@
     languageCompletion,
   } from "#lib/utils/codeBlocks";
   import { headingsExtension } from "#lib/utils/headings";
+  import { liveMarkdownExtension } from "#lib/utils/liveMarkdown";
   import { foldKeymap } from "@codemirror/language";
   import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
@@ -720,6 +721,7 @@
           }),
           codeBlocksExtension(),
           headingsExtension(),
+          liveMarkdownExtension(),
           autocompletion({ override: [languageCompletion], icons: false }),
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
