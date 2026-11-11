@@ -164,8 +164,22 @@ fn file_url(config: &WebDavConfig, name: &str) -> String {
     format!("{}/{}", dir_url(config), name)
 }
 
+/// Formats a reqwest error including its full source chain (e.g. TLS
+/// certificate errors behind a corporate proxy) and logs it.
+fn connection_error(e: reqwest::Error) -> String {
+    let mut msg = e.to_string();
+    let mut source = std::error::Error::source(&e);
+    while let Some(s) = source {
+        msg.push_str(&format!(": {}", s));
+        source = s.source();
+    }
+    log::error!("WebDAV connection error: {}", msg);
+    format!("Connection failed: {}", msg)
+}
+
 fn build_client() -> Result<Client, String> {
     Client::builder()
+        .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(20))
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))
@@ -216,7 +230,7 @@ async fn ensure_remote_dir(
     let res = authed(client.request(method, dir_url(config)), config, password)
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(connection_error)?;
     if res.status() == StatusCode::METHOD_NOT_ALLOWED {
         return Ok(());
     }
@@ -236,7 +250,7 @@ async fn head_remote(
     let res = authed(client.head(file_url(config, name)), config, password)
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(connection_error)?;
     if res.status() == StatusCode::NOT_FOUND {
         return Ok(None);
     }
@@ -262,7 +276,7 @@ async fn get_remote(
     let res = authed(client.get(file_url(config, name)), config, password)
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(connection_error)?;
     check_status(res.status(), "Downloading remote file")?;
     let token = token_from(&res);
     let modified = modified_from(&res);
@@ -289,7 +303,7 @@ async fn put_remote(
         .body(content.to_string())
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(connection_error)?;
     check_status(res.status(), "Uploading file")
 }
 
@@ -488,7 +502,7 @@ pub async fn test_webdav_connection(
         .header("Depth", "0")
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(connection_error)?;
     if res.status() == StatusCode::NOT_FOUND {
         return Err("Remote directory not found (404)".into());
     }
