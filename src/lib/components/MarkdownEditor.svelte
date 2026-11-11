@@ -4,6 +4,7 @@
   import {
     EditorView,
     ViewPlugin,
+    drawSelection,
     keymap,
     Decoration,
     hoverTooltip,
@@ -725,6 +726,9 @@
           editorThemeCompartment.of(buildEditorTheme()),
           spellCheckCompartment.of([]),
           history(),
+          // Eigener Caret statt nativem: WKWebView malt den nativen Caret
+          // beim Löschen in fettem Text nicht neu (Caret hängt hinterher)
+          drawSelection(),
           EditorView.lineWrapping,
           EditorView.updateListener.of(handleUpdate),
           EditorView.domEventHandlers({
