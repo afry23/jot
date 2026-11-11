@@ -4,6 +4,7 @@
   import {
     EditorView,
     ViewPlugin,
+    drawSelection,
     keymap,
     Decoration,
     hoverTooltip,
@@ -54,6 +55,7 @@
     languageCompletion,
   } from "#lib/utils/codeBlocks";
   import { headingsExtension } from "#lib/utils/headings";
+  import { liveMarkdownExtension } from "#lib/utils/liveMarkdown";
   import { foldKeymap } from "@codemirror/language";
   import { languages } from "@codemirror/language-data";
   import { logger } from "#lib/utils/logger";
@@ -719,12 +721,16 @@
           }),
           codeBlocksExtension(),
           headingsExtension(),
+          liveMarkdownExtension(),
           autocompletion({ override: [languageCompletion], icons: false }),
           highlightLineField,
           highlightCompartment.of(syntaxHighlighting(buildHighlightStyle())),
           editorThemeCompartment.of(buildEditorTheme()),
           spellCheckCompartment.of([]),
           history(),
+          // Eigener Caret statt nativem: WKWebView malt den nativen Caret
+          // beim Löschen in fettem Text nicht neu (Caret hängt hinterher)
+          drawSelection(),
           EditorView.lineWrapping,
           EditorView.updateListener.of(handleUpdate),
           EditorView.domEventHandlers({
