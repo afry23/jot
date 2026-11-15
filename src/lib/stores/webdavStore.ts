@@ -1,7 +1,7 @@
 // #lib/stores/webdavStore.ts
 import { get, writable } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
-import { loadNotes } from "#lib/utils/persistence";
+import { loadNotes, isSavePending } from "#lib/utils/persistence";
 import { logger } from "#lib/utils/logger";
 
 export interface WebDavConfig {
@@ -15,6 +15,7 @@ interface SyncResult {
   pulled: number[];
   pushed: number[];
   conflicts: number[];
+  merged: number[];
 }
 
 const defaultConfig: WebDavConfig = {
@@ -31,6 +32,7 @@ export const lastSyncResult = writable<SyncResult | null>(null);
 export const syncError = writable<string | null>(null);
 
 const SYNC_DEBOUNCE_MS = 5000;
+const SYNC_POLL_MS = 60000;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export async function loadWebdavConfig(): Promise<WebDavConfig> {
@@ -113,8 +115,20 @@ export async function initWebdavSync(): Promise<() => void> {
   const onSaved = () => scheduleSync();
   window.addEventListener("jot:note-saved", onSaved);
   syncNow();
+
+  // Pull remote changes while the app stays open. Skipped while a save is
+  // pending so the editor cannot overwrite a freshly pulled version.
+  const poll = () => {
+    if (isSavePending()) return;
+    syncNow();
+  };
+  const interval = setInterval(poll, SYNC_POLL_MS);
+  window.addEventListener("focus", poll);
+
   return () => {
     window.removeEventListener("jot:note-saved", onSaved);
+    window.removeEventListener("focus", poll);
+    clearInterval(interval);
     if (syncTimeout) clearTimeout(syncTimeout);
   };
 }

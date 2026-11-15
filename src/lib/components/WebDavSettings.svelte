@@ -182,8 +182,9 @@
         Last sync: {$lastSync.toLocaleString()}
         {#if $lastSyncResult}
           – {$lastSyncResult.pushed.length} uploaded, {$lastSyncResult.pulled
-            .length} downloaded{#if $lastSyncResult.conflicts.length > 0}, {$lastSyncResult
-              .conflicts.length} conflict(s) (copy kept on server){/if}
+            .length} downloaded{#if $lastSyncResult.merged.length > 0}, {$lastSyncResult
+              .merged.length} merged{/if}{#if $lastSyncResult.conflicts.length > 0},
+            {$lastSyncResult.conflicts.length} conflict(s) (copy kept on server){/if}
         {/if}
       </div>
     {:else}
