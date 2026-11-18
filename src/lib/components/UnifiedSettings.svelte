@@ -5,6 +5,9 @@
     fontSize,
     setFontSize,
     type FontSize,
+    textWidth,
+    setTextWidth,
+    type TextWidth,
   } from "#lib/stores/settings";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import "../fa-icons";
@@ -20,6 +23,12 @@
   onMount(async () => {
     appVersion = await getVersion();
   });
+
+  const textWidthOptions: { value: TextWidth; label: string }[] = [
+    { value: "medium", label: "Medium" },
+    { value: "wide", label: "Wide" },
+    { value: "full", label: "Unlimited" },
+  ];
 
   // Font size options
   const fontSizeOptions: { value: FontSize; label: string }[] = [
@@ -148,6 +157,23 @@
               <Button
                 variant={$fontSize === option.value ? "primary" : "default"}
                 on:click={() => changeFontSize(option.value)}
+              >
+                {option.label}
+              </Button>
+            {/each}
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-gray-700 dark:text-gray-300">Text Width</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            {#each textWidthOptions as option}
+              <Button
+                variant={$textWidth === option.value ? "primary" : "default"}
+                on:click={() => setTextWidth(option.value)}
               >
                 {option.label}
               </Button>
