@@ -237,7 +237,7 @@ pub fn run() {
             // Windows: DWM folgt System-Theme nicht automatisch → explizit setzen
             #[cfg(target_os = "windows")]
             if let Some(window) = app.get_webview_window("main") {
-                let theme = if matches!(dark_light::detect(), dark_light::Mode::Dark) {
+                let theme = if matches!(dark_light::detect(), Ok(dark_light::Mode::Dark)) {
                     tauri::Theme::Dark
                 } else {
                     tauri::Theme::Light
