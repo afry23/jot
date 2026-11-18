@@ -34,7 +34,8 @@
   import { tags } from "@lezer/highlight";
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-shell";
-  import { theme, fontSize } from "#lib/stores/settings";
+  import { theme, fontSize, textWidth } from "#lib/stores/settings";
+  import type { TextWidth } from "#lib/stores/settings";
   import {
     spellCheckEnabled,
     type GrammarError,
@@ -274,6 +275,12 @@
   let linkModalInitialText = "";
   let linkModalInitialHref = "";
 
+  const textWidthMap: Record<TextWidth, string> = {
+    medium: "1000px",
+    wide: "1400px",
+    full: "none",
+  };
+
   const fontSizeMap: Record<string, string> = {
     small: "14px",
     medium: "16px",
@@ -425,7 +432,7 @@
           padding: "20px 28px 200px 44px",
           lineHeight: "1.7",
           color: textColor,
-          maxWidth: "800px",
+          maxWidth: textWidthMap[$textWidth] ?? "none",
         },
         ".cm-cursor, .cm-dropCursor": {
           borderLeftColor: caretColor,
@@ -492,7 +499,8 @@
   $: {
     const _t = $theme;
     const _f = $fontSize;
-    if (view && (_t || _f)) reconfigureEditor();
+    const _w = $textWidth;
+    if (view && (_t || _f || _w)) reconfigureEditor();
   }
 
   // Toggle spell check on/off
