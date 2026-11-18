@@ -2,6 +2,13 @@ import { setNotes, notesLoaded } from "#lib/stores/notes";
 import { invoke } from "@tauri-apps/api/core";
 import { logger } from "#lib/utils/logger";
 
+let savePending = false;
+
+// True while a debounced save has not reached the disk yet
+export function isSavePending(): boolean {
+  return savePending;
+}
+
 // Save a note to storage
 export async function saveNote(tabIndex: number, content: string) {
   try {
@@ -13,11 +20,16 @@ export async function saveNote(tabIndex: number, content: string) {
       clearTimeout(window.savingTimeout);
     }
 
+    savePending = true;
     window.savingTimeout = setTimeout(async () => {
-      await invoke("save_note", {
-        tabIndex,
-        content,
-      });
+      try {
+        await invoke("save_note", {
+          tabIndex,
+          content,
+        });
+      } finally {
+        savePending = false;
+      }
       // Let the WebDAV sync know there is something new to push
       window.dispatchEvent(new CustomEvent("jot:note-saved"));
     }, 1000); // 1 second debounce

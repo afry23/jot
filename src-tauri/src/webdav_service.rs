@@ -32,6 +32,9 @@ pub struct WebDavConfig {
 struct NoteState {
     hash: String,
     token: Option<String>,
+    // Content at the last sync; common ancestor for the 3-way merge
+    #[serde(default)]
+    base: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -47,6 +50,7 @@ pub struct SyncResult {
     pub pulled: Vec<usize>,
     pub pushed: Vec<usize>,
     pub conflicts: Vec<usize>,
+    pub merged: Vec<usize>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -93,6 +97,11 @@ fn decide(
             }
         }
     }
+}
+
+/// 3-way line-based merge. `None` if both sides changed the same lines.
+fn try_merge(base: &str, local: &str, remote: &str) -> Option<String> {
+    diffy::merge(base, local, remote).ok()
 }
 
 fn hash_content(content: &str) -> String {
@@ -359,10 +368,17 @@ async fn sync_inner(
         match decision {
             Decision::Skip => {
                 // Record baseline if missing (e.g. both empty)
+                // Backfill the merge base for states saved by older versions
+                if let Some(n) = state.notes.get_mut(&i) {
+                    if n.base.is_none() && n.hash == local_hash {
+                        n.base = Some(local.clone());
+                    }
+                }
                 if remote.is_some() || !state.notes.contains_key(&i) {
                     state.notes.entry(i).or_insert(NoteState {
                         hash: local_hash,
                         token: remote.map(|r| r.token),
+                        base: Some(local),
                     });
                 }
             }
@@ -376,6 +392,7 @@ async fn sync_inner(
                     NoteState {
                         hash: local_hash,
                         token,
+                        base: Some(local),
                     },
                 );
                 result.pushed.push(i);
@@ -390,6 +407,7 @@ async fn sync_inner(
                     NoteState {
                         hash: hash_content(&file.content),
                         token: file.token,
+                        base: Some(file.content),
                     },
                 );
                 result.pulled.push(i);
@@ -403,8 +421,37 @@ async fn sync_inner(
                         NoteState {
                             hash: local_hash,
                             token: file.token,
+                            base: Some(local),
                         },
                     );
+                    continue;
+                }
+
+                // Try a 3-way merge against the last synced version
+                let base = state.notes.get(&i).and_then(|n| n.base.clone());
+                if let Some(merged) = base
+                    .as_deref()
+                    .and_then(|b| try_merge(b, &local, &file.content))
+                {
+                    backup_once!();
+                    fs::write(&path, &merged)
+                        .map_err(|e| format!("Failed to write note {}: {}", i, e))?;
+                    put_remote(&client, config, password, &name, &merged).await?;
+                    let token = head_remote(&client, config, password, &name)
+                        .await?
+                        .map(|r| r.token);
+                    state.notes.insert(
+                        i,
+                        NoteState {
+                            hash: hash_content(&merged),
+                            token,
+                            base: Some(merged),
+                        },
+                    );
+                    info!("WebDAV sync merged note {}", i);
+                    result.merged.push(i);
+                    result.pulled.push(i);
+                    result.pushed.push(i);
                     continue;
                 }
 
@@ -427,6 +474,7 @@ async fn sync_inner(
                         NoteState {
                             hash: hash_content(&file.content),
                             token: file.token,
+                            base: Some(file.content),
                         },
                     );
                     result.pulled.push(i);
@@ -442,6 +490,7 @@ async fn sync_inner(
                         NoteState {
                             hash: local_hash,
                             token,
+                            base: Some(local),
                         },
                     );
                     result.pushed.push(i);
@@ -541,7 +590,28 @@ mod tests {
         NoteState {
             hash: hash_content(content),
             token: Some(token.into()),
+            base: Some(content.into()),
         }
+    }
+
+    #[test]
+    fn merge_disjoint_changes() {
+        let base = "# T\n\na\n\nb\n\nc\n";
+        let local = "# T\n\nA1\n\nb\n\nc\n";
+        let remote = "# T\n\na\n\nb\n\nC1\n";
+        let m = try_merge(base, local, remote).unwrap();
+        assert!(m.contains("A1") && m.contains("C1"));
+    }
+
+    #[test]
+    fn merge_same_line_conflicts() {
+        assert_eq!(try_merge("a\nb\nc\n", "a\nX\nc\n", "a\nY\nc\n"), None);
+    }
+
+    #[test]
+    fn merge_identical_change() {
+        let m = try_merge("a\nb\n", "a\nX\n", "a\nX\n").unwrap();
+        assert_eq!(m, "a\nX\n");
     }
 
     #[test]
